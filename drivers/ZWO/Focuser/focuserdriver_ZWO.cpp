@@ -144,18 +144,40 @@ int		eaf_RetCode;
 int		currentPos;
 
 //	CONSOLE_DEBUG(__FUNCTION__);
+
+	//*	if connection was previously open, try to close it first
+	if (cEAFconnectionIsOpen)
+	{
+		EAFClose(cEAFInfo.ID);
+		cEAFconnectionIsOpen	=	false;
+	}
+
 	eaf_RetCode	=	EAFGetID(cEAF_ID_num, &cEAFInfo.ID);
+	if (eaf_RetCode != EAF_SUCCESS)
+	{
+		CONSOLE_DEBUG_W_NUM("EAFGetID() failed, eaf_RetCode\t=",	eaf_RetCode);
+		cEAFconnectionIsOpen	=	false;
+		return(false);
+	}
+
 	eaf_RetCode	=	EAFOpen(cEAFInfo.ID);
 	if (eaf_RetCode == EAF_SUCCESS)
 	{
 		cEAFconnectionIsOpen			=	true;
-		EAFGetProperty(cEAFInfo.ID, &cEAFInfo);
+		eaf_RetCode	=	EAFGetProperty(cEAFInfo.ID, &cEAFInfo);
+		if (eaf_RetCode == EAF_SUCCESS)
+		{
+//			CONSOLE_DEBUG_W_NUM("cEAF_ID_num     \t=",	cEAF_ID_num);
+//			CONSOLE_DEBUG_W_NUM("cEAFInfo.ID     \t=",	cEAFInfo.ID);
+//			CONSOLE_DEBUG_W_NUM("cEAFInfo.MaxStep\t=",	cEAFInfo.MaxStep);
+//			CONSOLE_DEBUG_W_STR("cEAFInfo.Name   \t=",	cEAFInfo.Name);
+			cFocuserProp.MaxStep			=	cEAFInfo.MaxStep;
+		}
+		else
+		{
+			CONSOLE_DEBUG_W_NUM("EAFGetProperty() returned\t=",	eaf_RetCode);
+		}
 
-//		CONSOLE_DEBUG_W_NUM("cEAF_ID_num     \t=",	cEAF_ID_num);
-//		CONSOLE_DEBUG_W_NUM("cEAFInfo.ID     \t=",	cEAFInfo.ID);
-//		CONSOLE_DEBUG_W_NUM("cEAFInfo.MaxStep\t=",	cEAFInfo.MaxStep);
-//		CONSOLE_DEBUG_W_STR("cEAFInfo.Name   \t=",	cEAFInfo.Name);
-		cFocuserProp.MaxStep			=	cEAFInfo.MaxStep;
 		eaf_RetCode	=	EAFGetPosition(cEAFInfo.ID, &currentPos);
 		if (eaf_RetCode == EAF_SUCCESS)
 		{
@@ -169,6 +191,7 @@ int		currentPos;
 	else
 	{
 		cEAFconnectionIsOpen			=	false;
+		ProcessEAFerror(eaf_RetCode, __FUNCTION__, "EAFOpen() failed:");
 		CONSOLE_DEBUG_W_NUM("eaf_RetCode\t=",	eaf_RetCode);
 	}
 	return(cEAFconnectionIsOpen);
@@ -196,36 +219,45 @@ int			eaf_count;
 		{
 			OpenFocuserConnection();
 		}
-
+		return(1000 * 1000);	//*	return early if connection not open
 	}
+
 	currentMillis	=	millis();
 	currentSeconds	=	currentMillis / 1000;
 
 	//---------------------------------------------------------------------
-	eaf_RetCode	=	EAFIsMoving(cEAFInfo.ID, &bMoving, &pbHandControl);
-	if (eaf_RetCode == EAF_SUCCESS)
+	//*	only call EAF functions if connection is open
+	if (cEAFconnectionIsOpen)
 	{
-		cFocuserProp.IsMoving	=	bMoving;
-	}
-	else
-	{
-		ProcessEAFerror(eaf_RetCode, __FUNCTION__, "EAFIsMoving() failed:");
+		eaf_RetCode	=	EAFIsMoving(cEAFInfo.ID, &bMoving, &pbHandControl);
+		if (eaf_RetCode == EAF_SUCCESS)
+		{
+			cFocuserProp.IsMoving	=	bMoving;
+		}
+		else
+		{
+			ProcessEAFerror(eaf_RetCode, __FUNCTION__, "EAFIsMoving() failed:");
+		}
 	}
 
 	//---------------------------------------------------------------------
-	eaf_RetCode	=	EAFGetPosition(cEAFInfo.ID, &currentPos);
-	if (eaf_RetCode == EAF_SUCCESS)
+	//*	only call EAF functions if connection is open
+	if (cEAFconnectionIsOpen)
 	{
-		cFocuserProp.Position	=	currentPos;
-	}
-	else
-	{
-		ProcessEAFerror(eaf_RetCode, __FUNCTION__, "EAFGetPosition() failed:");
+		eaf_RetCode	=	EAFGetPosition(cEAFInfo.ID, &currentPos);
+		if (eaf_RetCode == EAF_SUCCESS)
+		{
+			cFocuserProp.Position	=	currentPos;
+		}
+		else
+		{
+			ProcessEAFerror(eaf_RetCode, __FUNCTION__, "EAFGetPosition() failed:");
+		}
 	}
 
 	//---------------------------------------------------------------------
 	//*	check the temperature every 15 seconds
-	if ((currentSeconds - cLastTimeSecs_Temperature) > 15)
+	if (cEAFconnectionIsOpen && ((currentSeconds - cLastTimeSecs_Temperature) > 15))
 	{
 		eaf_RetCode	=	EAFGetTemp(cEAFInfo.ID, &fTemp);
 		if (eaf_RetCode == EAF_SUCCESS)
@@ -249,9 +281,26 @@ TYPE_ASCOM_STATUS	FocuserDriverZWO::SetFocuserPosition(const int32_t newPosition
 {
 TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
 int					eaf_RetCode;
+int					eaf_count;
 
 	CONSOLE_DEBUG_W_NUM("newPosition          \t=",	newPosition);
 	CONSOLE_DEBUG_W_NUM("cFocuserProp.Position\t=",	cFocuserProp.Position);
+
+	//*	ensure connection is open before attempting move
+	if (cEAFconnectionIsOpen == false)
+	{
+		eaf_count	=	EAFGetNum();
+		if (eaf_count > 0)
+		{
+			OpenFocuserConnection();
+		}
+		if (cEAFconnectionIsOpen == false)
+		{
+			alpacaErrCode	=	kASCOM_Err_NotConnected;
+			return(alpacaErrCode);
+		}
+	}
+
 	if (newPosition != cFocuserProp.Position)
 	{
 		CONSOLE_DEBUG("Calling EAFMove()");
@@ -264,6 +313,7 @@ int					eaf_RetCode;
 		else
 		{
 			alpacaErrCode	=   kASCOM_Err_UnspecifiedError;
+			ProcessEAFerror(eaf_RetCode, __FUNCTION__, "EAFMove() failed:");
 			CONSOLE_DEBUG_W_NUM("eaf_RetCode\t=",	eaf_RetCode);
 //			CONSOLE_ABORT("EAFMove failed");
 		}
@@ -619,6 +669,7 @@ void	FocuserDriverZWO::ProcessEAFerror(const int eaf_ErrorCode, const char *func
 
 		case EAF_ERROR_REMOVED:			//failed to find the focuser, maybe the focuser has been removed
 		case EAF_ERROR_INVALID_ID:
+		case EAF_ERROR_CLOSED:			//connection is closed, need to reopen
 			cEAFconnectionIsOpen	=	false;
 			break;
 
@@ -629,7 +680,6 @@ void	FocuserDriverZWO::ProcessEAFerror(const int eaf_ErrorCode, const char *func
 		case EAF_ERROR_ERROR_STATE:		//focuser is in error state
 		case EAF_ERROR_GENERAL_ERROR:	//other error
 		case EAF_ERROR_NOT_SUPPORTED:
-		case EAF_ERROR_CLOSED:
 		case EAF_ERROR_END:
 		default:
 			CONSOLE_DEBUG_W_NUM("EAF error code\t=", eaf_ErrorCode);
