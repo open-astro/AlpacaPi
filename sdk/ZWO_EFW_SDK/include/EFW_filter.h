@@ -49,6 +49,12 @@ typedef enum _EFW_ERROR_CODE{
 	EFW_ERROR_END = -1
 }EFW_ERROR_CODE;
 
+typedef struct _EFW_ID{
+	unsigned char id[8];
+}EFW_ID;
+
+typedef EFW_ID EFW_SN;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -228,10 +234,77 @@ EFW_SUCCESS: operation succeeds
 EFW_API	EFW_ERROR_CODE EFWClose(int ID);
 
 /***************************************************************************
-Descriptions£º
+Descriptions:
 get version string, like "0, 4, 0824"
 ***************************************************************************/
 EFW_API char* EFWGetSDKVersion();
+
+
+/***************************************************************************
+Descriptions:
+get hardware error code of filter wheel
+
+Paras:
+int ID: the ID of filter wheel
+
+bool *pErrCode: pointer to error code .
+
+Return: 
+EFW_ERROR_INVALID_ID: invalid ID value
+EFW_ERROR_CLOSED: not opened
+EFW_SUCCESS: operation succeeds
+***************************************************************************/
+EFW_API EFW_ERROR_CODE EFWGetHWErrorCode(int ID, int *pErrCode);
+
+/***************************************************************************
+Descriptions:
+Get firmware version of filter wheel
+
+Paras:
+int ID: the ID of filter wheel
+
+int *major, int *minor, int *build: pointer to value.
+
+Return: 
+EFW_ERROR_INVALID_ID: invalid ID value
+EFW_ERROR_CLOSED: not opened
+EFW_SUCCESS: operation succeeds
+***************************************************************************/
+EFW_API	EFW_ERROR_CODE EFWGetFirmwareVersion(int ID, unsigned char *major, unsigned char *minor, unsigned char *build);
+
+/***************************************************************************
+Descriptions:
+Get the serial number from a EFW
+
+Paras:
+int ID: the ID of focuser
+
+EFW_SN* pSN: pointer to SN
+
+Return: 
+EFW_ERROR_INVALID_ID: invalid ID value
+EFW_ERROR_CLOSED: not opened
+EFW_ERROR_NOT_SUPPORTED: the firmware does not support serial number
+EFW_SUCCESS: operation succeeds
+***************************************************************************/
+EFW_API EFW_ERROR_CODE EFWGetSerialNumber(int ID, EFW_SN* pSN);
+
+/***************************************************************************
+Descriptions:
+Set the alias to a EFW
+
+Paras:
+int ID: the ID of filter
+
+EFW_ID alias: the struct which contains the alias
+
+Return: 
+EFW_ERROR_INVALID_ID: invalid ID value
+EFW_ERROR_CLOSED: not opened
+EFW_ERROR_NOT_SUPPORTED: the firmware does not support setting alias
+EFW_SUCCESS: operation succeeds
+***************************************************************************/
+EFW_API EFW_ERROR_CODE EFWSetID(int ID, EFW_ID alias);
 
 #ifdef __cplusplus
 }
