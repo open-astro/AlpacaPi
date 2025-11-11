@@ -252,6 +252,14 @@ CheckSystemRequirements()
 		MISSING_LIBS=$((MISSING_LIBS + 1))
 	fi
 	
+	if [ -f "/usr/include/fitsio.h" ] || [ -f "/usr/local/include/fitsio.h" ]
+	then
+		PrintSuccess "libcfitsio-dev found"
+	else
+		PrintWarning "libcfitsio-dev not found (needed for FITS file support)"
+		MISSING_LIBS=$((MISSING_LIBS + 1))
+	fi
+	
 	if pkg-config --exists gtk+-2.0 2>/dev/null || [ -f "/usr/include/gtk-2.0/gtk/gtk.h" ] || [ -f "/usr/local/include/gtk-2.0/gtk/gtk.h" ]
 	then
 		PrintSuccess "libgtk2.0-dev found"
@@ -348,7 +356,7 @@ InstallSystemLibraries()
 	echo "$UPDATE_OUTPUT" | FilterAptErrors
 	
 	PrintStep "Installing required libraries..."
-	sudo apt-get install -y libusb-1.0-0-dev libudev-dev libi2c-dev libjpeg-dev libgtk2.0-dev
+	sudo apt-get install -y libusb-1.0-0-dev libudev-dev libi2c-dev libjpeg-dev libcfitsio-dev libgtk2.0-dev
 	
 	PrintSuccess "System libraries installed"
 }
