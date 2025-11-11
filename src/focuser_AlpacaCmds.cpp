@@ -61,6 +61,8 @@ TYPE_CmdEntry	gFocuserExtrasTable[]	=
 	{	"SwitchOut",			kCmd_Focuser_SwitchOut,			kCmdType_GET	},
 	{	"SwitchRot",			kCmd_Focuser_SwitchRot,			kCmdType_GET	},
 	{	"Voltage",				kCmd_Focuser_Voltage,			kCmdType_GET	},
+	{	"Backlash",				kCmd_Focuser_Backlash,			kCmdType_BOTH	},
+	{	"Reverse",				kCmd_Focuser_Reverse,			kCmdType_BOTH	},
 	{	"",						-1,								0x00	}
 
 };

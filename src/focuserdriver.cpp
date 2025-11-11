@@ -252,7 +252,14 @@ int					mySocket;
 			break;
 
 		case kCmd_Focuser_maxstep:				//*	Returns the focuser's maximum step size.
-			alpacaErrCode	=	Get_Maxstep(reqData, alpacaErrMsg, gValueString);
+			if (reqData->get_putIndicator == 'G')
+			{
+				alpacaErrCode	=	Get_Maxstep(reqData, alpacaErrMsg, gValueString);
+			}
+			else if (reqData->get_putIndicator == 'P')
+			{
+				alpacaErrCode	=	Put_Maxstep(reqData, alpacaErrMsg);
+			}
 			break;
 
 		case kCmd_Focuser_position:				//*	Returns the focuser's current position.
@@ -299,6 +306,28 @@ int					mySocket;
 
 		case kCmd_Focuser_readall:
 			alpacaErrCode	=	Get_Readall(reqData, alpacaErrMsg);
+			break;
+
+		case kCmd_Focuser_Backlash:			//*	Get/Set backlash compensation (vendor extension)
+			if (reqData->get_putIndicator == 'G')
+			{
+				alpacaErrCode	=	Get_Backlash(reqData, alpacaErrMsg, gValueString);
+			}
+			else if (reqData->get_putIndicator == 'P')
+			{
+				alpacaErrCode	=	Put_Backlash(reqData, alpacaErrMsg);
+			}
+			break;
+
+		case kCmd_Focuser_Reverse:			//*	Get/Set reverse direction (vendor extension)
+			if (reqData->get_putIndicator == 'G')
+			{
+				alpacaErrCode	=	Get_Reverse(reqData, alpacaErrMsg, gValueString);
+			}
+			else if (reqData->get_putIndicator == 'P')
+			{
+				alpacaErrCode	=	Put_Reverse(reqData, alpacaErrMsg);
+			}
 			break;
 
 		//----------------------------------------------------------------------------------------
@@ -418,6 +447,56 @@ TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_Success;
 
 	alpacaErrCode	=	kASCOM_Err_Success;
 
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
+TYPE_ASCOM_STATUS	FocuserDriver::Put_Maxstep(TYPE_GetPutRequestData *reqData, char *alpacaErrMsg)
+{
+TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
+
+	//*	Base class implementation - should be overridden by driver
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Put_Maxstep not implemented");
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
+TYPE_ASCOM_STATUS	FocuserDriver::Get_Backlash(TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString)
+{
+TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
+
+	//*	Base class implementation - should be overridden by driver
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Get_Backlash not implemented");
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
+TYPE_ASCOM_STATUS	FocuserDriver::Put_Backlash(TYPE_GetPutRequestData *reqData, char *alpacaErrMsg)
+{
+TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
+
+	//*	Base class implementation - should be overridden by driver
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Put_Backlash not implemented");
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
+TYPE_ASCOM_STATUS	FocuserDriver::Get_Reverse(TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString)
+{
+TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
+
+	//*	Base class implementation - should be overridden by driver
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Get_Reverse not implemented");
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
+TYPE_ASCOM_STATUS	FocuserDriver::Put_Reverse(TYPE_GetPutRequestData *reqData, char *alpacaErrMsg)
+{
+TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
+
+	//*	Base class implementation - should be overridden by driver
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Put_Reverse not implemented");
 	return(alpacaErrCode);
 }
 

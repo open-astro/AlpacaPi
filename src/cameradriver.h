@@ -610,6 +610,10 @@ virtual	TYPE_ASCOM_STATUS	Get_Readall(			TYPE_GetPutRequestData *reqData, char *
 		virtual	TYPE_ASCOM_STATUS		Read_Fastreadout(void);
 		virtual	TYPE_ASCOM_STATUS		Read_ImageData(void);
 
+		//*	Pulse guiding functions
+		virtual	TYPE_ASCOM_STATUS		StartPulseGuide(const TYPE_GuideDirections direction, const int durationMilliseconds, char *alpacaErrMsg);
+		virtual	TYPE_ASCOM_STATUS		StopPulseGuide(const TYPE_GuideDirections direction, char *alpacaErrMsg);
+
 
 
 				TYPE_ASCOM_STATUS	Read_Readoutmodes(char *readOutModeString, bool includeQuotes=false);
@@ -675,6 +679,8 @@ protected:
 	//*	pulse guiding information
 	bool			cSt4Port;
 	struct timeval	cPulseGuideStartTime;		//*	time pulse guiding was started
+	TYPE_GuideDirections	cPulseGuideDirection;	//*	direction of pulse guiding
+	int				cPulseGuideDurationMs;		//*	duration in milliseconds
 
 	long			cGain_default;
 

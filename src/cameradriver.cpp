@@ -282,7 +282,9 @@
 #include	"alpacadriver.h"
 #include	"alpacadriver_helper.h"
 #include	"cameradriver.h"
-#include	"cameradriver_auxinfo.h"
+#ifdef _ENABLE_FITS_
+	#include	"cameradriver_auxinfo.h"
+#endif // _ENABLE_FITS_
 #include	"observatory_settings.h"
 
 
@@ -395,7 +397,9 @@ int	cameraCnt;
 	cameraCnt	+=	CreateCameraObjects_Sim();
 #endif
 
+#ifdef _ENABLE_FITS_
 	AuxInfo_StartThread();
+#endif // _ENABLE_FITS_
 	return(cameraCnt);
 }
 
@@ -3135,23 +3139,36 @@ char				durationString[32];
 		{
 			if (cCameraProp.CanPulseGuide)
 			{
-				if (cSt4Port)
+				TYPE_GuideDirections	directionValue;
+				int					durationValue;
+
+				directionValue	=	(TYPE_GuideDirections)atoi(directionString);
+				durationValue	=	atoi(durationString);
+
+				if ((directionValue >= kGuide_North) && (directionValue < kGuide_last))
 				{
-					alpacaErrCode				=	kASCOM_Err_Success;
-					cCameraProp.IsPulseGuiding	=	true;
-					gettimeofday(&cPulseGuideStartTime, NULL);
+					//*	Call virtual function to start pulse guiding (driver-specific implementation)
+					alpacaErrCode	=	StartPulseGuide(directionValue, durationValue, alpacaErrMsg);
+					if (alpacaErrCode == kASCOM_Err_Success)
+					{
+						cPulseGuideDirection	=	directionValue;
+						cPulseGuideDurationMs	=	durationValue;
+						cCameraProp.IsPulseGuiding	=	true;
+						gettimeofday(&cPulseGuideStartTime, NULL);
+					}
 				}
 				else
 				{
-					alpacaErrCode	=	kASCOM_Err_NotImplemented;
-					GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Pulse guiding not supported");
+					alpacaErrCode			=	kASCOM_Err_InvalidValue;
+					reqData->httpRetCode	=	400;
+					GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Direction value out of range");
 					CONSOLE_DEBUG(alpacaErrMsg);
 				}
 			}
 			else
 			{
 				alpacaErrCode	=	kASCOM_Err_NotImplemented;
-				GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Pulse Guide not finished")
+				GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "Pulse guiding not supported");
 			}
 		}
 		else
@@ -7233,20 +7250,43 @@ TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
 
 #pragma mark -
 //*****************************************************************************
+TYPE_ASCOM_STATUS	CameraDriver::StartPulseGuide(const TYPE_GuideDirections direction, const int durationMilliseconds, char *alpacaErrMsg)
+{
+TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
+
+	//*	Base class implementation - should be overridden by driver
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "StartPulseGuide not implemented");
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
+TYPE_ASCOM_STATUS	CameraDriver::StopPulseGuide(const TYPE_GuideDirections direction, char *alpacaErrMsg)
+{
+TYPE_ASCOM_STATUS	alpacaErrCode	=	kASCOM_Err_NotImplemented;
+
+	//*	Base class implementation - should be overridden by driver
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "StopPulseGuide not implemented");
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
 void	CameraDriver::CheckPulseGuiding(void)
 {
 struct timeval	currentTime;
-uint32_t		deltaSecs;
+uint32_t		deltaMilliseconds;
+char			alpacaErrMsg[128];
 
-//	CONSOLE_DEBUG(__FUNCTION__);
-	//*	are we pulse guiding, if we are, turn it off after 1 second
+	//*	are we pulse guiding, if we are, turn it off after the specified duration
 	if (cCameraProp.IsPulseGuiding)
 	{
 		gettimeofday(&currentTime, NULL);
-		deltaSecs	=	currentTime.tv_sec - cPulseGuideStartTime.tv_sec;
+		deltaMilliseconds	=	((currentTime.tv_sec - cPulseGuideStartTime.tv_sec) * 1000) +
+								((currentTime.tv_usec - cPulseGuideStartTime.tv_usec) / 1000);
 
-		if (deltaSecs > 1)
+		if (deltaMilliseconds >= (uint32_t)cPulseGuideDurationMs)
 		{
+			//*	Duration expired, stop pulse guiding
+			StopPulseGuide(cPulseGuideDirection, alpacaErrMsg);
 			cCameraProp.IsPulseGuiding	=	false;
 		}
 	}
@@ -7435,14 +7475,15 @@ TYPE_ASCOM_STATUS	alpacaErrCode;
 			#endif
 		#endif
 
-				if (cSaveNextImage || cSaveAllImages)
-				{
-					SaveImageData();
-				}
-				else
-				{
+				//*	Image saving disabled - images are no longer automatically saved
+				//*	if (cSaveNextImage || cSaveAllImages)
+				//*	{
+				//*		SaveImageData();
+				//*	}
+				//*	else
+				//*	{
 	//				CONSOLE_DEBUG("Image not saved");
-				}
+				//*	}
 
 				//*	check to see if we are in auto exposure adjustment
 				if (cAutoAdjustExposure)

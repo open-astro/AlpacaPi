@@ -49,3 +49,12 @@ alwaysApply: true
 - Types: `TYPE_` prefix: `TYPE_CameraProperties`, `TYPE_WIDGET`
 - Global variables: `g` prefix: `gVerbose`, `gObseratorySettings`
 - Functions: PascalCase or camelCase: `FormatTimeString()`, `IsTrueFalse()`
+
+## Code Commit
+- When user asks for a commit look over all the changed file
+- create a commit for Github Desktop
+- Only execute git commands to see what files have changed
+
+## Design
+- Focus on Alapca standards https://ascom-standards.org/api/ 3.1
+- Focus on Alpaca Server and Astro Drivers

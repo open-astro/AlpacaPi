@@ -47,12 +47,17 @@ class FocuserDriver: public AlpacaDriver
 			TYPE_ASCOM_STATUS	Get_Absolute(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 			TYPE_ASCOM_STATUS	Get_Ismoving(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 			TYPE_ASCOM_STATUS	Get_Maxincrement(		TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
-			TYPE_ASCOM_STATUS	Get_Maxstep(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
+			virtual	TYPE_ASCOM_STATUS	Get_Maxstep(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 			TYPE_ASCOM_STATUS	Get_Position(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 			TYPE_ASCOM_STATUS	Get_Stepsize(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 			TYPE_ASCOM_STATUS	Get_Tempcomp(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 
 			TYPE_ASCOM_STATUS	Put_Tempcomp(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg);
+			TYPE_ASCOM_STATUS	Put_Maxstep(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg);
+			TYPE_ASCOM_STATUS	Get_Backlash(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
+			TYPE_ASCOM_STATUS	Put_Backlash(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg);
+			TYPE_ASCOM_STATUS	Get_Reverse(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
+			TYPE_ASCOM_STATUS	Put_Reverse(			TYPE_GetPutRequestData *reqData, char *alpacaErrMsg);
 			TYPE_ASCOM_STATUS	Get_Tempcompavailable(	TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 			TYPE_ASCOM_STATUS	Get_Temperature(		TYPE_GetPutRequestData *reqData, char *alpacaErrMsg, const char *responseString);
 			TYPE_ASCOM_STATUS	Put_Halt(				TYPE_GetPutRequestData *reqData, char *alpacaErrMsg);

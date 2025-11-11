@@ -58,6 +58,8 @@ enum
 	kCmd_Focuser_SwitchOut,
 	kCmd_Focuser_SwitchRot,
 	kCmd_Focuser_Voltage,
+	kCmd_Focuser_Backlash,			//*	Get/Set backlash compensation (vendor extension)
+	kCmd_Focuser_Reverse,			//*	Get/Set reverse direction (vendor extension)
 
 	kCmd_Focuser_ExtrasLast
 
