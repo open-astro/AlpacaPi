@@ -14,7 +14,7 @@
 	extern "C" {
 #endif
 
-extern const char	gHtmlNightMode[];
+//*	gHtmlNightMode removed - replaced with gHtmlBodyStart in alpacadriver.cpp
 
 #ifdef __cplusplus
 }

@@ -839,6 +839,7 @@ SelectDrivers()
 	BUILD_TELESCOPE_LX200=false
 	BUILD_TELESCOPE_SKYWATCHER=false
 	BUILD_TELESCOPE_SERVO=false
+	BUILD_TELESCOPE_IOPTRON=false
 	
 	BUILD_DOME=false
 	
@@ -947,22 +948,30 @@ SelectDrivers()
 	then
 		BUILD_TELESCOPE=true
 		
+		if CheckFile "." "drivers/iOptron/Telescope"
+		then
+			if AskYesNo "  Include iOptron telescope mount support?" "n"
+			then
+				BUILD_TELESCOPE_IOPTRON=true
+			fi
+		fi
+		
 		if AskYesNo "  Include LX200 telescope mount support?" "n"
 		then
 			BUILD_TELESCOPE_LX200=true
 		fi
 		
+		if CheckFile "." "libs/src_servo"
+		then
+			if AskYesNo "  Include Servo telescope mount support?" "n"
+			then
+				BUILD_TELESCOPE_SERVO=true
+			fi
+		fi
+		
 		if AskYesNo "  Include SkyWatcher telescope mount support? (Not finished)" "n"
 		then
 			BUILD_TELESCOPE_SKYWATCHER=true
-		fi
-		
-		if CheckFile "." "libs/src_servo"
-	then
-			if AskYesNo "  Include Servo telescope mount support?" "n"
-		then
-				BUILD_TELESCOPE_SERVO=true
-		fi
 		fi
 	fi
 	
@@ -1007,9 +1016,10 @@ SelectDrivers()
 	[ "$BUILD_FOCUSER_MOONLITE" = true ] && echo "	  - MoonLite focuser"
 	[ "$BUILD_ROTATOR" = true ] && echo "	✓ Rotator support (NiteCrawler)"
 	[ "$BUILD_TELESCOPE" = true ] && echo "	✓ Telescope mount support"
+	[ "$BUILD_TELESCOPE_IOPTRON" = true ] && echo "	  - iOptron telescope mount"
 	[ "$BUILD_TELESCOPE_LX200" = true ] && echo "	  - LX200 telescope mount"
-	[ "$BUILD_TELESCOPE_SKYWATCHER" = true ] && echo "	  - SkyWatcher telescope mount"
 	[ "$BUILD_TELESCOPE_SERVO" = true ] && echo "	  - Servo telescope mount"
+	[ "$BUILD_TELESCOPE_SKYWATCHER" = true ] && echo "	  - SkyWatcher telescope mount"
 	[ "$BUILD_DOME" = true ] && echo "	✓ Dome support"
 	[ "$BUILD_SWITCH" = true ] && echo "	✓ Switch support"
 	[ "$BUILD_CALIBRATION" = true ] && echo "	✓ Calibration control"
@@ -1167,22 +1177,28 @@ EOF
 		cat >> "$CUSTOM_MAKEFILE" << 'EOF'
 alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_TELESCOPE_
 EOF
+		if [ "$BUILD_TELESCOPE_IOPTRON" = true ]
+		then
+			cat >> "$CUSTOM_MAKEFILE" << 'EOF'
+alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_TELESCOPE_IOPTRON_
+EOF
+		fi
 		if [ "$BUILD_TELESCOPE_LX200" = true ]
 		then
 			cat >> "$CUSTOM_MAKEFILE" << 'EOF'
 alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_TELESCOPE_LX200_
 EOF
 		fi
-		if [ "$BUILD_TELESCOPE_SKYWATCHER" = true ]
-		then
-			cat >> "$CUSTOM_MAKEFILE" << 'EOF'
-alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_TELESCOPE_SKYWATCH_
-EOF
-	fi
 		if [ "$BUILD_TELESCOPE_SERVO" = true ]
 		then
 			cat >> "$CUSTOM_MAKEFILE" << 'EOF'
 alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_TELESCOPE_SERVO_
+EOF
+		fi
+		if [ "$BUILD_TELESCOPE_SKYWATCHER" = true ]
+		then
+			cat >> "$CUSTOM_MAKEFILE" << 'EOF'
+alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_TELESCOPE_SKYWATCH_
 EOF
 		fi
 	fi
@@ -1271,6 +1287,13 @@ EOF
 		fi
 	fi
 	
+	if [ "$BUILD_TELESCOPE" = true ]
+	then
+		cat >> "$CUSTOM_MAKEFILE" << 'EOF'
+alpacapi_selective:	$(TELESCOPE_DRIVER_OBJECTS)
+EOF
+	fi
+	
 	#*	Add OpenCV-dependent objects if OpenCV is detected
 	if pkg-config --exists opencv4 2>/dev/null || pkg-config --exists opencv 2>/dev/null || \
 	   [ -f "/usr/include/opencv2/highgui/highgui_c.h" ] || [ -f "/usr/local/include/opencv2/highgui/highgui_c.h" ] || \
@@ -1323,6 +1346,13 @@ EOF
 	then
 		cat >> "$CUSTOM_MAKEFILE" << 'EOF'
 		$(FOCUSER_DRIVER_OBJECTS)				\
+EOF
+	fi
+	
+	if [ "$BUILD_TELESCOPE" = true ]
+	then
+		cat >> "$CUSTOM_MAKEFILE" << 'EOF'
+		$(TELESCOPE_DRIVER_OBJECTS)				\
 EOF
 	fi
 	

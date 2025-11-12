@@ -2073,8 +2073,42 @@ const char	gHtmlHeader_html[]	=
 	"Access-Control-Allow-Headers: *\r\n"
 	"\r\n"
 	"<!DOCTYPE html>\r\n"
-	"<HTML lang=\"en\">\r\n"
-	"<HEAD>\r\n"
+	"<html lang=\"en\">\r\n"
+	"<head>\r\n"
+	"<meta charset=\"UTF-8\">\r\n"
+	"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n"
+	"<style>\r\n"
+	"* { box-sizing: border-box; margin: 0; padding: 0; }\r\n"
+	"body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #0a0a0a; color: #e0e0e0; line-height: 1.6; padding: 20px; }\r\n"
+	"h1, h2, h3 { color: #4a9eff; margin: 1em 0 0.5em 0; }\r\n"
+	"h1 { font-size: 2em; border-bottom: 2px solid #4a9eff; padding-bottom: 0.3em; }\r\n"
+	"h2 { font-size: 1.5em; }\r\n"
+	"h3 { font-size: 1.2em; color: #6bb6ff; }\r\n"
+	"a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }\r\n"
+	"a:hover { color: #6bb6ff; text-decoration: underline; }\r\n"
+	"a:visited { color: #8a7fff; }\r\n"
+	"table { border-collapse: collapse; width: 100%; margin: 1em 0; background: #1a1a1a; border: 1px solid #333; }\r\n"
+	"th { background: #2a2a2a; color: #ffd700; padding: 12px; text-align: left; border: 1px solid #444; font-weight: 600; }\r\n"
+	"td { padding: 10px; border: 1px solid #333; }\r\n"
+	"tr:nth-child(even) { background: #151515; }\r\n"
+	"tr:hover { background: #252525; }\r\n"
+	".text-center { text-align: center; }\r\n"
+	".text-right { text-align: right; }\r\n"
+	".status-enabled { color: #4caf50; font-weight: 600; }\r\n"
+	".status-disabled { color: #f44336; font-weight: 600; }\r\n"
+	".container { max-width: 1200px; margin: 0 auto; }\r\n"
+	".section { margin: 2em 0; padding: 1.5em; background: #151515; border-radius: 8px; border: 1px solid #333; }\r\n"
+	"hr { border: none; border-top: 2px solid #4a9eff; margin: 2em 0; }\r\n"
+	"ul, ol { margin: 1em 0; padding-left: 2em; }\r\n"
+	"li { margin: 0.5em 0; }\r\n"
+	"p { margin: 1em 0; }\r\n"
+	".info-text { color: #aaa; font-size: 0.9em; }\r\n"
+	".badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 600; }\r\n"
+	".badge-success { background: #4caf50; color: #fff; }\r\n"
+	".badge-error { background: #f44336; color: #fff; }\r\n"
+	".badge-info { background: #2196f3; color: #fff; }\r\n"
+	"code { background: #2a2a2a; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; color: #ffd700; }\r\n"
+	"</style>\r\n"
 
 };
 // text/css
@@ -2111,25 +2145,14 @@ const char	gHtmlHeader_js[]	=
 };
 
 
-#define _USE_BLACK_HTML_
 //*****************************************************************************
-const char	gHtmlNightMode[]	=
+//*	Modern HTML5 - no deprecated tags needed, CSS handles styling
+//*****************************************************************************
+const char	gHtmlBodyStart[]	=
 {
-#ifdef _USE_BLACK_HTML_
-//	"<BODY bgcolor=#111111>\r\n"
-	"<BODY bgcolor=#000000>\r\n"
-	"<FONT COLOR=white>\r\n"
-	"<BODY link=red>\r\n"
-	"<BODY vlink=pink>\r\n"
-#else
-//	"<BODY bgcolor=#111111>\r\n"
-	"<BODY bgcolor=#40098E>\r\n"
-//	"<BODY bgcolor=#222222>\r\n"
-	"<FONT COLOR=white>\r\n"
-	"<BODY link=red>\r\n"
-//	"<BODY vlink=pink>\r\n"
-	"<BODY vlink=green>\r\n"
-#endif
+	"</head>\r\n"
+	"<body>\r\n"
+	"<div class=\"container\">\r\n"
 
 };
 
@@ -2138,10 +2161,10 @@ const char	gHtmlNightMode[]	=
 //*****************************************************************************
 static char	gDeviceTableText[]	=
 {
-	"<TR><TD COLSPAN=3>"
-	"Any of the above devices are supported by this version.<BR>"
+	"<tr><td colspan=\"3\" class=\"info-text\">"
+	"Any of the above devices are supported by this version.<br>"
 	"AlpacaPi must be restarted after they are plugged in"
-	"</TD></TR>\r\n"
+	"</td></tr>\r\n"
 };
 
 //*****************************************************************************
@@ -2158,81 +2181,72 @@ char		deviceTypeName[32];
 
 		SocketWriteData(mySocketFD,	gHtmlHeader_html);
 
-		sprintf(lineBuffer, "<TITLE>%s-%s</TITLE>\r\n", kApplicationName, kVersionString);
+		sprintf(lineBuffer, "<title>%s-%s</title>\r\n", kApplicationName, kVersionString);
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	gHtmlNightMode);
+		SocketWriteData(mySocketFD,	gHtmlBodyStart);
 
-		SocketWriteData(mySocketFD,	"</HEAD><BODY>\r\n<CENTER>\r\n");
-		sprintf(lineBuffer, "<H1>%s<BR>%s Build #%d </H1>\r\n", kApplicationName, kVersionString, kBuildNumber);
+		sprintf(lineBuffer, "<header><h1>%s<br>%s Build #%d</h1></header>\r\n", kApplicationName, kVersionString, kBuildNumber);
 		SocketWriteData(mySocketFD,	lineBuffer);
 
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"<nav class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<h2>Navigation</h2>\r\n");
+		SocketWriteData(mySocketFD,	"<ul>\r\n");
 
-		SocketWriteData(mySocketFD,	"<FONT SIZE=5>\r\n");
-		SocketWriteData(mySocketFD,	"<UL>\r\n");
-
-		SocketWriteData(mySocketFD,	"<LI><A HREF=setup>AlpacaPi Settings for this server</A>\r\n");
+		SocketWriteData(mySocketFD,	"<li><a href=\"setup\">AlpacaPi Settings for this server</a></li>\r\n");
 #ifdef _ENABLE_GLOBAL_GPS_
 		if (gEnableGlobalGPS)
 		{
-			SocketWriteData(mySocketFD,	"<LI><A HREF=gps>GPS Statistics for GPS connected to this server</A>\r\n");
+			SocketWriteData(mySocketFD,	"<li><a href=\"gps\">GPS Statistics for GPS connected to this server</a></li>\r\n");
 		}
 #endif // _ENABLE_GLOBAL_GPS_
-		SocketWriteData(mySocketFD,	"<P>\r\n");
 
 		//*	check to see if the docs folder and index file are present
 		returnCode	=	stat("docs/index.html", &fileStatus);		//*	fstat - check for existence of file
 		if (returnCode == 0)
 		{
 			SocketWriteData(mySocketFD,
-				"<LI><A HREF=docs/index.html target=github>AlpacaPi Documentation on this server</A>\r\n");
+				"<li><a href=\"docs/index.html\" target=\"github\">AlpacaPi Documentation on this server</a></li>\r\n");
 		}
-//		else
-//		{
-//			CONSOLE_DEBUG("docs/index.html NOT found");
-//		}
 		SocketWriteData(mySocketFD,
-				"<LI><A HREF=https://msproul.github.io/AlpacaPi/ target=github>AlpacaPi Documentation on github</A>\r\n");
+				"<li><a href=\"https://msproul.github.io/AlpacaPi/\" target=\"github\">AlpacaPi Documentation on github</a></li>\r\n");
 
 		SocketWriteData(mySocketFD,
-				"<LI><A HREF=https://github.com/msproul/AlpacaPi target=github>Download AlpacaPi from github</A>\r\n");
+				"<li><a href=\"https://github.com/msproul/AlpacaPi\" target=\"github\">Download AlpacaPi from github</a></li>\r\n");
 
-
-
-		SocketWriteData(mySocketFD,	"</UL>\r\n");
-		SocketWriteData(mySocketFD,	"</FONT>\r\n");
-
-		SocketWriteData(mySocketFD,	"<P>\r\n");
+		SocketWriteData(mySocketFD,	"</ul>\r\n");
+		SocketWriteData(mySocketFD,	"</nav>\r\n");
 
 		//------------------------------------------------------------------
 
-		SocketWriteData(mySocketFD,	"<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<H3>Supported devices</H3>\r\n");
-		SocketWriteData(mySocketFD,	"<BR>\r\n");
-		SocketWriteData(mySocketFD,	"<TABLE BORDER=2>\r\n");
-		SocketWriteData(mySocketFD,	"\t<TR>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH>Device Type</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH>Manufacturer</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH>Software Version</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t</TR>\r\n");
+		SocketWriteData(mySocketFD,	"<section class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<h3>Supported devices</h3>\r\n");
+		SocketWriteData(mySocketFD,	"<table>\r\n");
+		SocketWriteData(mySocketFD,	"\t<thead><tr>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Device Type</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Manufacturer</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Software Version</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t</tr></thead>\r\n");
+		SocketWriteData(mySocketFD,	"\t<tbody>\r\n");
 		for (iii=0; iii<gSupportedDevCnt; iii++)
 		{
 			GetAlpacaName(gSupportedDevices[iii].deviceType, deviceTypeName);
-			sprintf(lineBuffer, "\t\t<TR><TD>%s</TD><TD>%s</TD><TD>%s</TD></TR>\r\n",
+			sprintf(lineBuffer, "\t\t<tr><td>%s</td><td>%s</td><td>%s</td></tr>\r\n",
 				deviceTypeName,
 				gSupportedDevices[iii].manufacturer,
 //				gSupportedDevices[iii].model,
 				gSupportedDevices[iii].libraryVer);
 			SocketWriteData(mySocketFD,	lineBuffer);
 		}
-		sprintf(lineBuffer, "\t\t<TR><TH COLSPAN=3>Total =%d</TH></TR>\r\n", gSupportedDevCnt);
+		sprintf(lineBuffer, "\t\t<tr><th colspan=\"3\" class=\"text-center\">Total = %d</th></tr>\r\n", gSupportedDevCnt);
 		SocketWriteData(mySocketFD,	lineBuffer);
 		SocketWriteData(mySocketFD,	gDeviceTableText);
-		SocketWriteData(mySocketFD,	"</TABLE>\r\n");
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"\t</tbody>\r\n");
+		SocketWriteData(mySocketFD,	"</table>\r\n");
+		SocketWriteData(mySocketFD,	"</section>\r\n");
 
-		sprintf(lineBuffer, "Your IP address is %s\r\n", reqData->clientIPaddr);
+		sprintf(lineBuffer, "<p class=\"info-text\">Your IP address is %s</p>\r\n", reqData->clientIPaddr);
 		SocketWriteData(mySocketFD,	lineBuffer);
+		SocketWriteData(mySocketFD,	"</div>\r\n");
 }
 
 
@@ -2258,19 +2272,19 @@ static const char	*gURLlist[]	=
 //*****************************************************************************
 static void	SendSeparateLine(const int socketFD)
 {
-	SocketWriteData(socketFD,	"<HR SIZE=4 COLOR=RED>\r\n");
+	SocketWriteData(socketFD,	"<hr>\r\n");
 }
 
 //*****************************************************************************
 static const char	gWatchDogHelpMsg[]	=
 {
-	"<P>"
+	"<p class=\"info-text\">"
 	"The watchdog timeout is triggered when no commands are received by the "
 	"driver for the time period specifed. "
 	"The primary intent of this is to go safe-mode if communications is lost to the controlling system. "
-	"The only drivers currently utilizing this feature are Dome_RPI and coverCalibration "
-	"The dome watchdog can be disabled in the dome setup page. "
-	"<P>"
+	"The only drivers currently utilizing this feature are Dome_RPI and coverCalibration. "
+	"The dome watchdog can be disabled in the dome setup page."
+	"</p>\r\n"
 
 };
 
@@ -2312,98 +2326,98 @@ int		iii;
 		mySocketFD	=	reqData->socket;
 		SocketWriteData(mySocketFD,	gHtmlHeader_html);
 
-		sprintf(lineBuffer, "<TITLE>%s</TITLE>\r\n", gWebTitle);
+		sprintf(lineBuffer, "<title>%s</title>\r\n", gWebTitle);
 
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	gHtmlNightMode);
-		SocketWriteData(mySocketFD,	"</HEAD><BODY>\r\n<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<H1>Alpaca device driver Web server</H1>\r\n");
-		sprintf(lineBuffer, "<H3>%s</H3>\r\n", gWebTitle);
+		SocketWriteData(mySocketFD,	gHtmlBodyStart);
+		SocketWriteData(mySocketFD,	"<header><h1>Alpaca device driver Web server</h1>\r\n");
+		sprintf(lineBuffer, "<h2>%s</h2></header>\r\n", gWebTitle);
 
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
 #ifdef _INCLUDE_MULTI_LANGUAGE_SUPPORT_
 		SocketWriteData(mySocketFD,	gLanguageSelection);
 #endif // _INCLUDE_MULTI_LANGUAGE_SUPPORT_
 
 		OutPutObservatoryInfoHTML(mySocketFD);
 
-		SocketWriteData(mySocketFD,	"<A HREF=../log target=log>Click here for log</A><BR>\r\n");
-		SocketWriteData(mySocketFD,	"<A HREF=../stats target=log>Click here for stats</A><BR>\r\n");
+		SocketWriteData(mySocketFD,	"<nav class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<p><a href=\"../log\" target=\"log\">View Log</a> | <a href=\"../stats\" target=\"log\">View Stats</a></p>\r\n");
+		SocketWriteData(mySocketFD,	"<p class=\"info-text\">Enabled features: ");
 
 	#ifdef	_ENABLE_CAMERA_
-		SocketWriteData(mySocketFD,	"Camera support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Camera</span> ");
 	#endif
 
 	#ifdef	_ENABLE_DOME_
-		SocketWriteData(mySocketFD,	"Dome support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Dome</span> ");
 	#endif
 	#ifdef	_ENABLE_DOME_ROR_
-		SocketWriteData(mySocketFD,	"ROR support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">ROR</span> ");
 	#endif
 
 	#if defined(_ENABLE_FILTERWHEEL_) || defined(_ENABLE_FILTERWHEEL_ZWO_) || defined(_ENABLE_FILTERWHEEL_ATIK_)
-		SocketWriteData(mySocketFD,	"Filterwheel support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Filterwheel</span> ");
 	#endif
 
 	#ifdef	_ENABLE_FOCUSER_
-		SocketWriteData(mySocketFD,	"Focuser support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Focuser</span> ");
 	#endif
 
 	#ifdef	_ENABLE_ROTATOR_
-		SocketWriteData(mySocketFD,	"Rotator support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Rotator</span> ");
 	#endif
 
 	#ifdef	_ENABLE_TELESCOPE_
-		SocketWriteData(mySocketFD,	"Telescope support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Telescope</span> ");
 	#endif
 
 	#ifdef	_ENABLE_OBSERVINGCONDITIONS_
-		SocketWriteData(mySocketFD,	"Observingconditions support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">ObservingConditions</span> ");
 	#endif
 	#ifdef _ENABLE_CALIBRATION_
-		SocketWriteData(mySocketFD,	"CoverCalibration support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">CoverCalibration</span> ");
 	#endif // _ENABLE_CALIBRATION_
 
 	#ifdef	_ENABLE_SAFETYMONITOR_
-		SocketWriteData(mySocketFD,	"SafetyMonitor support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">SafetyMonitor</span> ");
 	#endif
 
 	#ifdef	_ENABLE_SWITCH_
-		SocketWriteData(mySocketFD,	"Switch support is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Switch</span> ");
 	#endif
 	#ifdef _ENABLE_MULTICAM_
-		SocketWriteData(mySocketFD,	"Multicam is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Multicam</span> ");
 	#endif
 	#ifdef _ENABLE_SHUTTER_
-		SocketWriteData(mySocketFD,	"Shutter is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Shutter</span> ");
 	#endif
 	#ifdef _ENABLE_SLIT_TRACKER_
-		SocketWriteData(mySocketFD,	"Slit Tracker is enabled<BR>\r\n");
+		SocketWriteData(mySocketFD,	"<span class=\"badge badge-info\">Slit Tracker</span> ");
 	#endif // _ENABLE_SLIT_TRACKER_
+		SocketWriteData(mySocketFD,	"</p></nav>\r\n");
 
 		SendSeparateLine(mySocketFD);
 		//=============================================================================
 		//*	print out a table of active devices
-		SocketWriteData(mySocketFD,	"<CENTER>\r\n");
-
-
-		SocketWriteData(mySocketFD,	"The following devices are configured on this Remote Server:<P>\r\n");
-		SocketWriteData(mySocketFD,	"<TABLE BORDER=2>\r\n");
+		SocketWriteData(mySocketFD,	"<section class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<h3>Configured Devices</h3>\r\n");
+		SocketWriteData(mySocketFD,	"<p class=\"info-text\">The following devices are configured on this Remote Server:</p>\r\n");
+		SocketWriteData(mySocketFD,	"<table>\r\n");
 		//*	do the header row
-		SocketWriteData(mySocketFD,	"\t<TR>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Setup</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Control</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Device Type</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Dev Num</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Device Name</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Description</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Cmds / Errs</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>CPU (ms)</TH>\r\n");
+		SocketWriteData(mySocketFD,	"\t<thead><tr>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Setup</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Control</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Device Type</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Dev Num</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Device Name</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Description</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Cmds / Errs</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>CPU (ms)</th>\r\n");
 	#ifdef _ENABLE_CPU_NANOSECS_DISPLAY_
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>CPU (nano-secs)</TH>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>CPU (nano-secs)</th>\r\n");
 	#endif
-		SocketWriteData(mySocketFD,	"\t</TR>\r\n");
+		SocketWriteData(mySocketFD,	"\t</tr></thead>\r\n");
+		SocketWriteData(mySocketFD,	"\t<tbody>\r\n");
 
 		//------------------------------------------------------------------
 		//*	output the main device grid listing
@@ -2411,120 +2425,124 @@ int		iii;
 		{
 			if (gAlpacaDeviceList[iii] != NULL)
 			{
-				SocketWriteData(mySocketFD,	"\t<TR>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
 
 				//*	is SETUP supported
-				SocketWriteData(mySocketFD,	"\t\t<TD>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t<td>\r\n");
 				if (gAlpacaDeviceList[iii]->cDriverSupportsSetup)
 				{
 					//*	https://ascom-standards.org/api/?urls.primaryName=ASCOM%20Alpaca%20Management%20API#/
 					//*		/setup/v1/{device_type}/{device_number}/setup
 
-					sprintf(lineBuffer,	"<A HREF=/setup/v1/%s/%d/setup target=%s>Setup</A>",
+					sprintf(lineBuffer,	"<a href=\"/setup/v1/%s/%d/setup\" target=\"%s\">Setup</a>",
 												gAlpacaDeviceList[iii]->cAlpacaDeviceString,
 												gAlpacaDeviceList[iii]->cAlpacaDeviceNum,
 												gAlpacaDeviceList[iii]->cAlpacaName);
 					SocketWriteData(mySocketFD,	lineBuffer);
 				}
-				SocketWriteData(mySocketFD,	"\t\t</TD>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t</td>\r\n");
 
-				SocketWriteData(mySocketFD,	"\t\t<TD>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t<td>\r\n");
 				if (gAlpacaDeviceList[iii]->cDriverSupportsJavaScript)
 				{
-					sprintf(lineBuffer,	"<A HREF=/html/index.html target=%s>Control</A>",
+					sprintf(lineBuffer,	"<a href=\"/html/index.html\" target=\"%s\">Control</a>",
 												gAlpacaDeviceList[iii]->cAlpacaDeviceString);
 					SocketWriteData(mySocketFD,	lineBuffer);
 				}
 
-				SocketWriteData(mySocketFD,	"\t\t</TD>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t</td>\r\n");
 
-				SocketWriteData(mySocketFD,	"\t\t<TD>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t<td>");
 					SocketWriteData(mySocketFD,	gAlpacaDeviceList[iii]->cAlpacaName);
-				SocketWriteData(mySocketFD,	"\t\t</TD>\r\n");
+				SocketWriteData(mySocketFD,	"</td>\r\n");
 
-				sprintf(lineBuffer, "<TD><CENTER>%d</TD>\r\n", gAlpacaDeviceList[iii]->cAlpacaDeviceNum);
+				sprintf(lineBuffer, "\t\t\t<td class=\"text-center\">%d</td>\r\n", gAlpacaDeviceList[iii]->cAlpacaDeviceNum);
 				SocketWriteData(mySocketFD,	lineBuffer);
 
-				SocketWriteData(mySocketFD,	"\t\t<TD>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t<td>");
 					SocketWriteData(mySocketFD,	gAlpacaDeviceList[iii]->cCommonProp.Name);
-				SocketWriteData(mySocketFD,	"\t\t</TD>\r\n");
+				SocketWriteData(mySocketFD,	"</td>\r\n");
 
-				SocketWriteData(mySocketFD,	"\t\t<TD>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t<td>");
 					SocketWriteData(mySocketFD,	gAlpacaDeviceList[iii]->cCommonProp.Description);
-				SocketWriteData(mySocketFD,	"\t\t</TD>\r\n");
+				SocketWriteData(mySocketFD,	"</td>\r\n");
 
-				sprintf(lineBuffer, "<TD><CENTER>%d/%d</TD>\r\n",
+				sprintf(lineBuffer, "\t\t\t<td class=\"text-center\">%d/%d</td>\r\n",
 											gAlpacaDeviceList[iii]->cTotalCmdsProcessed,
 											gAlpacaDeviceList[iii]->cTotalCmdErrors);
 				SocketWriteData(mySocketFD,	lineBuffer);
 
 				//*	cpu usage, this may get moved to a different page later
-				sprintf(lineBuffer, "<TD><CENTER>%lu</TD>\r\n", gAlpacaDeviceList[iii]->cTotalMilliSeconds);
+				sprintf(lineBuffer, "\t\t\t<td class=\"text-center\">%lu</td>\r\n", gAlpacaDeviceList[iii]->cTotalMilliSeconds);
 				SocketWriteData(mySocketFD,	lineBuffer);
 		#ifdef _ENABLE_CPU_NANOSECS_DISPLAY_
 			#if (__LONG_LONG_WIDTH__ == 64)
-				sprintf(lineBuffer, "<TD><CENTER>%lu</TD>\r\n", gAlpacaDeviceList[iii]->cTotalNanoSeconds);
+				sprintf(lineBuffer, "\t\t\t<td class=\"text-center\">%lu</td>\r\n", gAlpacaDeviceList[iii]->cTotalNanoSeconds);
 			#else
-				sprintf(lineBuffer, "<TD><CENTER>%lu</TD>\r\n", gAlpacaDeviceList[iii]->cTotalNanoSeconds);
+				sprintf(lineBuffer, "\t\t\t<td class=\"text-center\">%lu</td>\r\n", gAlpacaDeviceList[iii]->cTotalNanoSeconds);
 			#endif
 				SocketWriteData(mySocketFD,	lineBuffer);
 		#endif	//	_ENABLE_CPU_NANOSECS_DISPLAY_
 
 
-				SocketWriteData(mySocketFD,	"\t</TR>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 
 			}
 		}
 
-		SocketWriteData(mySocketFD,	"</TABLE>\r\n");
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"\t</tbody>\r\n");
+		SocketWriteData(mySocketFD,	"</table>\r\n");
+		SocketWriteData(mySocketFD,	"</section>\r\n");
 
 		//------------------------------------------------------------------
 		//*	output html showing watchdog status
-		SocketWriteData(mySocketFD,	"<P>\r\n");
-		SocketWriteData(mySocketFD,	"<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"WatchDog settings<P>\r\n");
-		SocketWriteData(mySocketFD,	"<TABLE BORDER=2>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Device</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Watchdog</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Timeout (minutes)</TH>\r\n");
-		SocketWriteData(mySocketFD,	"\t\t<TH><FONT COLOR=yellow>Timeout Action</TH>\r\n");
+		SocketWriteData(mySocketFD,	"<section class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<h3>WatchDog Settings</h3>\r\n");
+		SocketWriteData(mySocketFD,	"<table>\r\n");
+		SocketWriteData(mySocketFD,	"\t<thead><tr>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Device</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Watchdog</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Timeout (minutes)</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t<th>Timeout Action</th>\r\n");
+		SocketWriteData(mySocketFD,	"\t</tr></thead>\r\n");
+		SocketWriteData(mySocketFD,	"\t<tbody>\r\n");
 		for (iii=0; iii<gDeviceCnt; iii++)
 		{
 			if (gAlpacaDeviceList[iii] != NULL)
 			{
 				if (gAlpacaDeviceList[iii]->cDeviceType != kDeviceType_Management)
 				{
-					SocketWriteData(mySocketFD,	"\t<TR>\r\n");
-					SocketWriteData(mySocketFD,	"\t\t<TD>\r\n");
+					SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
+					SocketWriteData(mySocketFD,	"\t\t\t<td>");
 						SocketWriteData(mySocketFD,	gAlpacaDeviceList[iii]->cAlpacaName);
-					SocketWriteData(mySocketFD,	"\t\t</TD>\r\n");
+					SocketWriteData(mySocketFD,	"</td>\r\n");
 
 					//*	is Watchdog enabled
 					if (gAlpacaDeviceList[iii]->cWatchDogEnabled)
 					{
-						SocketWriteData(mySocketFD,	"\t\t<TD><FONT COLOR=GREEN>Enabled</TD>\r\n");
+						SocketWriteData(mySocketFD,	"\t\t\t<td><span class=\"status-enabled\">Enabled</span></td>\r\n");
 					}
 					else
 					{
-						SocketWriteData(mySocketFD,	"\t\t<TD><FONT COLOR=RED>Disabled</TD>\r\n");
+						SocketWriteData(mySocketFD,	"\t\t\t<td><span class=\"status-disabled\">Disabled</span></td>\r\n");
 					}
-					sprintf(lineBuffer, "<TD><CENTER>%d</TD>\r\n",
+					sprintf(lineBuffer, "\t\t\t<td class=\"text-center\">%d</td>\r\n",
 												gAlpacaDeviceList[iii]->cWatchDogTimeOut_Minutes);
 					SocketWriteData(mySocketFD,	lineBuffer);
-					SocketWriteData(mySocketFD,	"\t\t<TD>\r\n");
+					SocketWriteData(mySocketFD,	"\t\t\t<td>");
 						SocketWriteData(mySocketFD,	gAlpacaDeviceList[iii]->cWatchDogTimeOutAction);
-					SocketWriteData(mySocketFD,	"\t\t</TD>\r\n");
+					SocketWriteData(mySocketFD,	"</td>\r\n");
 
 
-					SocketWriteData(mySocketFD,	"\t</TR>\r\n");
+					SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 				}
 			}
 		}
 
-		SocketWriteData(mySocketFD,	"</TABLE>\r\n");
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"\t</tbody>\r\n");
+		SocketWriteData(mySocketFD,	"</table>\r\n");
 		SocketWriteData(mySocketFD,	gWatchDogHelpMsg);
+		SocketWriteData(mySocketFD,	"</section>\r\n");
 
 
 		//------------------------------------------------------------------
@@ -2544,59 +2562,60 @@ int		iii;
 		//**********************************************************
 		SendSeparateLine(mySocketFD);
 
-		SocketWriteData(mySocketFD,	"<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<H3>Versions</H3>\r\n");
-		SocketWriteData(mySocketFD,	"<TABLE BORDER=1>\r\n");
+		SocketWriteData(mySocketFD,	"<section class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<h3>Versions</h3>\r\n");
+		SocketWriteData(mySocketFD,	"<table>\r\n");
+		SocketWriteData(mySocketFD,	"\t<tbody>\r\n");
 
 		//------------------------------------------------------------------
 		//*	this software
-		SocketWriteData(mySocketFD,	"<TR>\r\n");
-			SocketWriteData(mySocketFD,	"<TD>AlpacaDriver</TD>\r\n");
-			sprintf(lineBuffer,	"<TD>%s</TD>\r\n", kVersionString);
+		SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
+			SocketWriteData(mySocketFD,	"\t\t\t<td>AlpacaDriver</td>\r\n");
+			sprintf(lineBuffer,	"\t\t\t<td>%s</td>\r\n", kVersionString);
 			SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</TR>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 
-		SocketWriteData(mySocketFD,	"<TR>\r\n");
-			SocketWriteData(mySocketFD,	"<TD>Build #</TD>\r\n");
-			sprintf(lineBuffer,	"<TD>%d</TD>\r\n", kBuildNumber);
+		SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
+			SocketWriteData(mySocketFD,	"\t\t\t<td>Build #</td>\r\n");
+			sprintf(lineBuffer,	"\t\t\t<td>%d</td>\r\n", kBuildNumber);
 			SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</TR>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 
 
 		//------------------------------------------------------------------
 		//*	OS version
 		if (strlen(gOsReleaseString) > 0)
 		{
-			SocketWriteData(mySocketFD,	"<TR>\r\n");
-				SocketWriteData(mySocketFD,	"<TD>OS Version</TD>\r\n");
-				sprintf(lineBuffer,	"<TD>%s</TD>\r\n", gOsReleaseString);
+			SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
+				SocketWriteData(mySocketFD,	"\t\t\t<td>OS Version</td>\r\n");
+				sprintf(lineBuffer,	"\t\t\t<td>%s</td>\r\n", gOsReleaseString);
 				SocketWriteData(mySocketFD,	lineBuffer);
-			SocketWriteData(mySocketFD,	"</TR>\r\n");
+			SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 		}
 
 		//------------------------------------------------------------------
 		//*	cpu we are running on
-		SocketWriteData(mySocketFD,	"<TR>\r\n");
-			SocketWriteData(mySocketFD,	"<TD>cpu</TD>\r\n");
-			sprintf(lineBuffer,	"<TD>%s</TD>\r\n", gCpuInfoString);
+		SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
+			SocketWriteData(mySocketFD,	"\t\t\t<td>cpu</td>\r\n");
+			sprintf(lineBuffer,	"\t\t\t<td>%s</td>\r\n", gCpuInfoString);
 			SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</TR>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 
 		//------------------------------------------------------------------
 		//*	gcc version
-		SocketWriteData(mySocketFD,	"<TR>\r\n");
-			SocketWriteData(mySocketFD,	"<TD>gcc</TD>\r\n");
-			sprintf(lineBuffer,	"<TD>%s</TD>\r\n", __VERSION__);
+		SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
+			SocketWriteData(mySocketFD,	"\t\t\t<td>gcc</td>\r\n");
+			sprintf(lineBuffer,	"\t\t\t<td>%s</td>\r\n", __VERSION__);
 			SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</TR>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 
 		//------------------------------------------------------------------
 		//*	glib version
-		SocketWriteData(mySocketFD,	"<TR>\r\n");
-			SocketWriteData(mySocketFD,	"<TD>libc version</TD>\r\n");
-			sprintf(lineBuffer,	"<TD>%s</TD>\r\n", gnu_get_libc_version());
+		SocketWriteData(mySocketFD,	"\t\t<tr>\r\n");
+			SocketWriteData(mySocketFD,	"\t\t\t<td>libc version</td>\r\n");
+			sprintf(lineBuffer,	"\t\t\t<td>%s</td>\r\n", gnu_get_libc_version());
 			SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</TR>\r\n");
+		SocketWriteData(mySocketFD,	"\t\t</tr>\r\n");
 
 #if defined(_ENABLE_WIRING_PI_) && defined(__arm__) && defined(__WIRING_PI_H__)
 		//------------------------------------------------------------------
@@ -2704,31 +2723,35 @@ int		iii;
 			SocketWriteData(mySocketFD,	"</TR>\r\n");
 		}
 
-		SocketWriteData(mySocketFD,	"</TABLE>\r\n");
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"\t</tbody>\r\n");
+		SocketWriteData(mySocketFD,	"</table>\r\n");
+		SocketWriteData(mySocketFD,	"</section>\r\n");
 
 		//**********************************************************
 		SendSeparateLine(mySocketFD);
-		SocketWriteData(mySocketFD,	"<H3>Links</H3>\r\n");
-		SocketWriteData(mySocketFD,	"<UL>\r\n");
+		SocketWriteData(mySocketFD,	"<section class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<h3>Links</h3>\r\n");
+		SocketWriteData(mySocketFD,	"<ul>\r\n");
 
 		//*	print out the list of URLS
 		iii	=	0;
 		while (strlen(gURLlist[iii]) > 0)
 		{
-			sprintf(lineBuffer,	"\t<LI><A HREF=%s target=link>%s</A>\r\n",	gURLlist[iii], gURLlist[iii]);
+			sprintf(lineBuffer,	"\t<li><a href=\"%s\" target=\"link\">%s</a></li>\r\n",	gURLlist[iii], gURLlist[iii]);
 			SocketWriteData(mySocketFD,	lineBuffer);
 //			CONSOLE_DEBUG(lineBuffer);
 			iii++;
 		}
 
-		SocketWriteData(mySocketFD,	"</UL>\r\n");
+		SocketWriteData(mySocketFD,	"</ul>\r\n");
+		SocketWriteData(mySocketFD,	"</section>\r\n");
 
 		//**********************************************************
 		SendSeparateLine(mySocketFD);
 		SendHtml_CompiledInfo(mySocketFD);
 
-		SocketWriteData(mySocketFD,	"</BODY></HTML>\r\n");
+		SocketWriteData(mySocketFD,	"</div>\r\n");
+		SocketWriteData(mySocketFD,	"</body></html>\r\n");
 	}
 	else
 	{
@@ -2752,11 +2775,12 @@ const char	*gUserAgentNames[]	=
 //*****************************************************************************
 static void	SendHtml_CompiledInfo(const int socketFD)
 {
-	SocketWriteData(socketFD,	"Compiled on ");
+	SocketWriteData(socketFD,	"<footer class=\"section\">\r\n");
+	SocketWriteData(socketFD,	"<p class=\"info-text\">Compiled on ");
 	SocketWriteData(socketFD,	__DATE__);
-	SocketWriteData(socketFD,	"\r\n<BR>");
-	SocketWriteData(socketFD,	"Written in C/C++\r\n<BR>");
-	SocketWriteData(socketFD,	"(C) 2019-2024 by Mark Sproul msproul@skychariot.com\r\n<BR>");
+	SocketWriteData(socketFD,	"<br>Written in C/C++<br>");
+	SocketWriteData(socketFD,	"(C) 2019-2024 by Mark Sproul msproul@skychariot.com</p>\r\n");
+	SocketWriteData(socketFD,	"</footer>\r\n");
 }
 
 //*****************************************************************************
@@ -2770,31 +2794,34 @@ int		iii;
 	{
 		mySocketFD	=	reqData->socket;
 		SocketWriteData(mySocketFD,	gHtmlHeader_html);
-//		SocketWriteData(mySocketFD,	gHtmlNightMode);
-		sprintf(lineBuffer, "<TITLE>%s</TITLE>\r\n", gWebTitle);
+		sprintf(lineBuffer, "<title>%s</title>\r\n", gWebTitle);
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</HEAD><BODY>\r\n<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<H1>Alpaca device driver Web server</H1>\r\n");
-		sprintf(lineBuffer, "<H3>%s</H3>\r\n", gWebTitle);
+		SocketWriteData(mySocketFD,	gHtmlBodyStart);
+		SocketWriteData(mySocketFD,	"<header>\r\n");
+		SocketWriteData(mySocketFD,	"<h1>Alpaca device driver Web server</h1>\r\n");
+		sprintf(lineBuffer, "<h3>%s</h3>\r\n", gWebTitle);
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"</header>\r\n");
 
 		OutPutObservatoryInfoHTML(mySocketFD);
 
 		//====================================================
 		//*	output the request counts by user agent
-		SocketWriteData(mySocketFD,	"<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<H3>Requests by User-Agent</H3>\r\n");
-		SocketWriteData(mySocketFD,	"<TABLE BORDER=1>\r\n");
+		SocketWriteData(mySocketFD,	"<section class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<h3>Requests by User-Agent</h3>\r\n");
+		SocketWriteData(mySocketFD,	"<table>\r\n");
+		SocketWriteData(mySocketFD,	"<thead><tr><th>User-Agent</th><th class=\"text-center\">Count</th></tr></thead>\r\n");
+		SocketWriteData(mySocketFD,	"<tbody>\r\n");
 		for (iii=0; iii<kHTTPclient_last; iii++)
 		{
-			SocketWriteData(mySocketFD,	"<TR>\r\n");
-			sprintf(lineBuffer, "<TD>%s</TD><TD>%d</TD>", gUserAgentNames[iii], gUserAgentCounters[iii]);
+			SocketWriteData(mySocketFD,	"<tr>\r\n");
+			sprintf(lineBuffer, "<td>%s</td><td class=\"text-center\">%d</td>", gUserAgentNames[iii], gUserAgentCounters[iii]);
 			SocketWriteData(mySocketFD,	lineBuffer);
-			SocketWriteData(mySocketFD,	"</TR>\r\n");
+			SocketWriteData(mySocketFD,	"</tr>\r\n");
 		}
-		SocketWriteData(mySocketFD,	"</TABLE>\r\n");
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"</tbody>\r\n");
+		SocketWriteData(mySocketFD,	"</table>\r\n");
+		SocketWriteData(mySocketFD,	"</section>\r\n");
 
 
 		for (iii=0; iii<gDeviceCnt; iii++)
@@ -2810,7 +2837,8 @@ int		iii;
 		SendSeparateLine(mySocketFD);
 		SendHtml_CompiledInfo(mySocketFD);
 
-		SocketWriteData(mySocketFD,	"</BODY></HTML>\r\n");
+		SocketWriteData(mySocketFD,	"</div>\r\n");
+		SocketWriteData(mySocketFD,	"</body></html>\r\n");
 	}
 	else
 	{
@@ -2820,15 +2848,15 @@ int		iii;
 //*****************************************************************************
 static char	gDocsIntro[]	=
 {
-	"<P>\r\n"
+	"<p>\r\n"
 	"This page documents the arguments for the Alpaca commands.\r\n"
 	"The purpose of this page is to document the extra stuff that I have added to Alpaca in AlpacaPi.\r\n"
 	"Most of the standard commands are not documented here because full documentation can be found on the Alpaca/ASCOM web site.\r\n"
-	"Commands that are <FONT COlOR=#ff00ff>magenta</FONT COLOR> are the ones that have been added and\r\n"
+	"Commands that are <span style=\"color: #ff00ff;\">magenta</span> are the ones that have been added and\r\n"
 	"are not part of the Alpaca standard definition.\r\n"
 //	"foo\r\n"
 //	"foo\r\n"
-	"<P>\r\n"
+	"</p>\r\n"
 };
 
 //*****************************************************************************
@@ -2842,13 +2870,14 @@ int		iii;
 	{
 		mySocketFD	=	reqData->socket;
 		SocketWriteData(mySocketFD,	gHtmlHeader_html);
-		sprintf(lineBuffer, "<TITLE>%s</TITLE>\r\n", gWebTitle);
+		sprintf(lineBuffer, "<title>%s</title>\r\n", gWebTitle);
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</HEAD><BODY>\r\n<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<H1>Alpaca device driver Web server</H1>\r\n");
-		sprintf(lineBuffer, "<H3>%s</H3>\r\n", gWebTitle);
+		SocketWriteData(mySocketFD,	gHtmlBodyStart);
+		SocketWriteData(mySocketFD,	"<header>\r\n");
+		SocketWriteData(mySocketFD,	"<h1>Alpaca device driver Web server</h1>\r\n");
+		sprintf(lineBuffer, "<h3>%s</h3>\r\n", gWebTitle);
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"</header>\r\n");
 
 		OutPutObservatoryInfoHTML(mySocketFD);
 
@@ -2866,7 +2895,8 @@ int		iii;
 		SendSeparateLine(mySocketFD);
 		SendHtml_CompiledInfo(mySocketFD);
 
-		SocketWriteData(mySocketFD,	"</BODY></HTML>\r\n");
+		SocketWriteData(mySocketFD,	"</div>\r\n");
+		SocketWriteData(mySocketFD,	"</body></html>\r\n");
 	}
 	else
 	{
@@ -2885,11 +2915,11 @@ long	myClassSize;
 	myClassSize	=	classSize;
 	if (deltaSize > 0)
 	{
-		sprintf(lineBuffer,	"<TR><TD>%s</TD><TD><CENTER>%ld</TD><TD><CENTER>%ld</TD></TR>\r\n",	className, myClassSize, deltaSize);
+		sprintf(lineBuffer,	"<tr><td>%s</td><td class=\"text-center\">%ld</td><td class=\"text-center\">%ld</td></tr>\r\n",	className, myClassSize, deltaSize);
 	}
 	else
 	{
-		sprintf(lineBuffer,	"<TR><TD>%s</TD><TD><CENTER>%ld</TD></TR>\r\n",	className, myClassSize);
+		sprintf(lineBuffer,	"<tr><td>%s</td><td class=\"text-center\">%ld</td></tr>\r\n",	className, myClassSize);
 	}
 	SocketWriteData(socketFD,	lineBuffer);
 
@@ -2905,20 +2935,20 @@ int		mySocketFD;
 	{
 		mySocketFD	=	reqData->socket;
 		SocketWriteData(mySocketFD,	gHtmlHeader_html);
-		sprintf(lineBuffer, "<TITLE>%s</TITLE>\r\n", gWebTitle);
+		sprintf(lineBuffer, "<title>%s</title>\r\n", gWebTitle);
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	gHtmlNightMode);
-		SocketWriteData(mySocketFD,	"</HEAD><BODY>\r\n<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<H1>Alpaca device driver Web server</H1>\r\n");
-		sprintf(lineBuffer, "<H3>%s</H3>\r\n", "AlpacaPi Class object size");
+		SocketWriteData(mySocketFD,	gHtmlBodyStart);
+		SocketWriteData(mySocketFD,	"<header>\r\n");
+		SocketWriteData(mySocketFD,	"<h1>Alpaca device driver Web server</h1>\r\n");
+		sprintf(lineBuffer, "<h3>%s</h3>\r\n", "AlpacaPi Class object size");
 		SocketWriteData(mySocketFD,	lineBuffer);
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"</header>\r\n");
 
 
-		SocketWriteData(mySocketFD,	"<CENTER>\r\n");
-		SocketWriteData(mySocketFD,	"<TABLE BORDER=1>\r\n");
-
-		SocketWriteData(mySocketFD,	"<TR><TH>Class Name</TH><TH>Size</TH><TH>Delta</TH></TD>\r\n");
+		SocketWriteData(mySocketFD,	"<section class=\"section\">\r\n");
+		SocketWriteData(mySocketFD,	"<table>\r\n");
+		SocketWriteData(mySocketFD,	"<thead><tr><th>Class Name</th><th class=\"text-center\">Size</th><th class=\"text-center\">Delta</th></tr></thead>\r\n");
+		SocketWriteData(mySocketFD,	"<tbody>\r\n");
 
 		//----------------------------------------
 		OutputHTML_ClassSize(mySocketFD, "AlpacaDriver (base class)",	sizeof(AlpacaDriver));
@@ -2959,7 +2989,9 @@ int		mySocketFD;
 		OutputHTML_ClassSize(mySocketFD, "SpectrographDriver",	sizeof(SpectrographDriver));
 #endif
 
-		SocketWriteData(mySocketFD,	"<TR><TH>Other structures</TH><TH>Size</TH></TD>\r\n");
+		SocketWriteData(mySocketFD,	"</tbody>\r\n");
+		SocketWriteData(mySocketFD,	"<thead><tr><th>Other structures</th><th class=\"text-center\">Size</th></tr></thead>\r\n");
+		SocketWriteData(mySocketFD,	"<tbody>\r\n");
 
 		OutputHTML_ClassSize(mySocketFD, "TYPE_CommonProperties",			sizeof(TYPE_CommonProperties));
 		OutputHTML_ClassSize(mySocketFD, "TYPE_CameraProperties",			sizeof(TYPE_CameraProperties));
@@ -2977,13 +3009,15 @@ int		mySocketFD;
 #endif
 		OutputHTML_ClassSize(mySocketFD, "TYPE_BinaryImageHdr",				sizeof(TYPE_BinaryImageHdr));
 
-		SocketWriteData(mySocketFD,	"</TABLE>\r\n");
-		SocketWriteData(mySocketFD,	"</CENTER>\r\n");
+		SocketWriteData(mySocketFD,	"</tbody>\r\n");
+		SocketWriteData(mySocketFD,	"</table>\r\n");
+		SocketWriteData(mySocketFD,	"</section>\r\n");
 
 		SendSeparateLine(mySocketFD);
 		SendHtml_CompiledInfo(mySocketFD);
 
-		SocketWriteData(mySocketFD,	"</BODY></HTML>\r\n");
+		SocketWriteData(mySocketFD,	"</div>\r\n");
+		SocketWriteData(mySocketFD,	"</body></html>\r\n");
 	}
 	else
 	{
@@ -3003,49 +3037,51 @@ char	lineBuffer[256];
 //	CONSOLE_DEBUG_W_STR("deviceName\t=", deviceName);
 //	CONSOLE_DEBUG_W_NUM("deviceNum\t=", deviceNum);
 	//*	now generate links to all of the commands
-	SocketWriteData(socketFD,	"\r\n<UL>\r\n");
+	SocketWriteData(socketFD,	"\r\n<ul>\r\n");
 	iii	=	0;
 	while (gCommonCmdTable[iii].commandName[0] != 0)
 	{
 		if ((gCommonCmdTable[iii].get_put == kCmdType_PUT) || (gCommonCmdTable[iii].commandName[0] == '-'))
 		{
-			sprintf(lineBuffer,	"\t<LI>%s\r\n", gCommonCmdTable[iii].commandName);
+			sprintf(lineBuffer,	"\t<li>%s</li>\r\n", gCommonCmdTable[iii].commandName);
 		}
 		else
 		{
-			sprintf(lineBuffer,	"\t<LI><A HREF=../api/v1/%s/%d/%s target=cmd>%s</A>\r\n",
-										deviceName,
-										deviceNum,
-										gCommonCmdTable[iii].commandName,
-										gCommonCmdTable[iii].commandName);
+			sprintf(lineBuffer,	"\t<li><a href=\"../api/v1/%s/%d/%s\" target=\"cmd\">%s</a></li>\r\n",
+									deviceName,
+									deviceNum,
+									gCommonCmdTable[iii].commandName,
+									gCommonCmdTable[iii].commandName);
 		}
 		SocketWriteData(socketFD,	lineBuffer);
 		iii++;
 	}
 
-	SocketWriteData(socketFD,	"<P>\r\n");
+	SocketWriteData(socketFD,	"</ul>\r\n");
+	SocketWriteData(socketFD,	"<p></p>\r\n");
 	//----------------------------------------------------------------
 	//*	now do the device specific command table
+	SocketWriteData(socketFD,	"<ul>\r\n");
 	iii	=	0;
 	while (cmdTable[iii].commandName[0] != 0)
 	{
 		if ((cmdTable[iii].get_put ==  kCmdType_PUT) || (cmdTable[iii].commandName[0] == '-'))
 		{
-			sprintf(lineBuffer,	"\t<LI>%s\r\n", cmdTable[iii].commandName);
+			sprintf(lineBuffer,	"\t<li>%s</li>\r\n", cmdTable[iii].commandName);
 		}
 		else
 		{
-			sprintf(lineBuffer,	"\t<LI><A HREF=../api/v1/%s/%d/%s target=cmd>%s</A>\r\n",
-										deviceName,
-										deviceNum,
-										cmdTable[iii].commandName,
-										cmdTable[iii].commandName);
+			sprintf(lineBuffer,	"\t<li><a href=\"../api/v1/%s/%d/%s\" target=\"cmd\">%s</a></li>\r\n",
+									deviceName,
+									deviceNum,
+									cmdTable[iii].commandName,
+									cmdTable[iii].commandName);
 		}
 		SocketWriteData(socketFD,	lineBuffer);
 //		CONSOLE_DEBUG(lineBuffer);
 		iii++;
 	}
-	SocketWriteData(socketFD,	"</UL>\r\n");
+	SocketWriteData(socketFD,	"</ul>\r\n");
 }
 
 //*****************************************************************************

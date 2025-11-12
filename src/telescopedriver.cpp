@@ -174,6 +174,10 @@
 	#include	"telescopedriver_sim.h"
 #endif
 
+#ifdef _ENABLE_TELESCOPE_IOPTRON_
+	#include	"telescopedriver_iOptron.h"
+#endif
+
 #ifdef _ENABLE_IMU_
 	#include "imu_lib.h"
 #endif
@@ -222,6 +226,11 @@ int	telescopeCnt;
 
 #ifdef _ENABLE_TELESCOPE_SIMULATOR_
 	CreateTelescopeObjects_Simulator();
+	telescopeCnt++;
+#endif
+
+#ifdef _ENABLE_TELESCOPE_IOPTRON_
+	CreateTelescopeObjects_iOptron();
 	telescopeCnt++;
 #endif
 	return(telescopeCnt);

@@ -6,6 +6,10 @@ Alpaca is an open, device-agnostic protocol developed by the ASCOM Initiative th
 
 With AlpacaPi Server running, your devices can be managed through popular astrophotography software including N.I.N.A. (Nighttime Imaging ’N’ Astronomy), Sequence Generator Pro (SGPro), SkySafari 7, Voyager, and many other applications that support the Alpaca standard without installing ASCOM or hardware-specific drivers on your computer.
 
+Once installed and running you can access the web sever and make changes to your gear is where acceptable. The ports to access the portal http://ip:6800/ based on the IP of your RPi
+
+<img src="./logos/alpcapi_web.png" alt="Alpaca Web Portal" width="600">
+
 This code is based on work from https://msproul.github.io/AlpacaPi/
 
 ## Hardware Support for ASIAIR Pro RPi
@@ -107,10 +111,11 @@ These libraries are required for the following devices:
 
 External libraries are NOT required for:
 
-	MoonLite Focusers (built-in support, no SDK needed - optional, enabled by default)
-	LX200 Telescope mount (supported - tracking on/off not implemented, optional, disabled by default)
-	SkyWatcher Telescope mount (not finished - not implemented, optional, disabled by default)
-	Calibration control (Flat panel control - optional, enabled by default)
+- Calibration control (Flat panel control)
+- MoonLite Focusers (built-in support)
+- iOptron Telescope Mounts (Work in progress)
+- LX200 Telescope Mounts (supported - tracking on/off not implemented, optional, disabled by default)
+- SkyWatcher Telescope Mount (not finished - not implemented, optional, disabled by default)
 
 Vendor SDK installation is handled automatically by `setup_complete.sh`. 
 
@@ -120,9 +125,7 @@ When you run `setup_complete.sh`, it will:
 - Install the appropriate libraries for your platform (x64, ARM32, ARM64)
 - Install USB rules for each vendor
 
-**Note**: You need to download vendor SDKs separately (they're not included in AlpacaPi). 
-Once downloaded and extracted to the AlpacaPi directory, `setup_complete.sh` will detect 
-and offer to install them.
+**Note**: You need to download vendor SDKs separately (they're not included in AlpacaPi). Once downloaded and extracted to the AlpacaPi directory, `setup_complete.sh` will detect and offer to install them.
 
 Supported vendors:
 - ZWO (ASI cameras, EFW filter wheels, EAF focusers)
@@ -132,7 +135,6 @@ Supported vendors:
 - PlayerOne cameras
 - ToupTek cameras
 - FLIR cameras
-
 
 ## Contributing:
 

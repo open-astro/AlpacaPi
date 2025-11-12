@@ -248,6 +248,7 @@ INCLUDES		=	-I/usr/include					\
 					-I$(DRIVERS_DIR)Rigel/Telescope	\
 					-I$(DRIVERS_DIR)SkyWatcher/Telescope	\
 					-I$(DRIVERS_DIR)Servo/Telescope	\
+					-I$(DRIVERS_DIR)iOptron/Telescope	\
 					-I$(DRIVERS_DIR)Simulator/Camera	\
 					-I$(DRIVERS_DIR)Simulator/FilterWheel	\
 					-I$(DRIVERS_DIR)Simulator/Focuser	\
@@ -327,6 +328,7 @@ CPP_OBJECTS=												\
 				$(OBJECT_DIR)telescopedriver_servo.o		\
 				$(OBJECT_DIR)telescopedriver_sim.o			\
 				$(OBJECT_DIR)telescopedriver_skywatch.o		\
+				$(OBJECT_DIR)telescopedriver_iOptron.o		\
 
 
 ######################################################################################
@@ -470,6 +472,7 @@ TELESCOPE_DRIVER_OBJECTS=									\
 				$(OBJECT_DIR)telescopedriver_Rigel.o		\
 				$(OBJECT_DIR)telescopedriver_servo.o		\
 				$(OBJECT_DIR)telescopedriver_sim.o			\
+				$(OBJECT_DIR)telescopedriver_iOptron.o		\
 				$(OBJECT_DIR)lx200_com.o					\
 
 EXPSCI_OBJECTS=												\
@@ -1172,6 +1175,13 @@ $(OBJECT_DIR)telescopedriver_skywatch.o :	$(DRIVERS_DIR)SkyWatcher/Telescope/tel
 											$(SRC_DIR)telescopedriver.h				\
 											$(SRC_DIR)alpacadriver.h
 	$(COMPILEPLUS) $(INCLUDES)				$(DRIVERS_DIR)SkyWatcher/Telescope/telescopedriver_skywatch.cpp -o$(OBJECT_DIR)telescopedriver_skywatch.o
+
+$(OBJECT_DIR)telescopedriver_iOptron.o :	$(DRIVERS_DIR)iOptron/Telescope/telescopedriver_iOptron.cpp	\
+											$(DRIVERS_DIR)iOptron/Telescope/telescopedriver_iOptron.h	\
+											$(SRC_DIR)telescopedriver.h				\
+											$(SRC_DIR)telescopedriver_comm.h		\
+											$(SRC_DIR)alpacadriver.h
+	$(COMPILEPLUS) $(INCLUDES)				$(DRIVERS_DIR)iOptron/Telescope/telescopedriver_iOptron.cpp -o$(OBJECT_DIR)telescopedriver_iOptron.o
 
 
 
