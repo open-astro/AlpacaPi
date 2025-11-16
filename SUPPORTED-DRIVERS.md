@@ -1,4 +1,4 @@
-# AlpacaPi Driver Support
+# AlpacaPi Supported Drivers
 
 This document lists all supported hardware vendors and device types in AlpacaPi Server.
 
