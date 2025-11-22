@@ -29,7 +29,7 @@ declare -A manufacturers_by_category=(
 	["Rotator"]="ZWO|MoonLite|Pegasus Astro|Simulator"
 	["Telescope"]="SkyWatcher|Rigel|iOptron|LX200|Simulator"
 	["Weather"]="Unihedron|Raspberry Pi|Simulator"
-	["GPIO / Aux"]="Raspberry Pi|Arduino|Simulator"
+	["GPIO / Aux"]="Raspberry Pi|Arduino|ASIAIR Power Ports|Simulator"
 )
 
 declare -a installed_drivers=()
@@ -1401,6 +1401,175 @@ EOF
 	echo "$custom_makefile"
 }
 
+find_rpi_config_txt()
+{
+	#*	Find the Raspberry Pi config.txt file
+	#*	Returns the path to config.txt or empty string if not found
+	#*	Purpose: Locate config.txt in standard locations
+	#*	Returns: Path to config.txt file or empty string
+	#*	Side Effects: None
+	#*	Note: Check /boot/firmware/config.txt first (newer Raspberry Pi OS)
+	#*	      then fall back to /boot/config.txt (older Raspberry Pi OS)
+	
+	if [ -f "/boot/firmware/config.txt" ]
+	then
+		echo "/boot/firmware/config.txt"
+		return 0
+	elif [ -f "/boot/config.txt" ]
+	then
+		echo "/boot/config.txt"
+		return 0
+	else
+		return 1
+	fi
+}
+
+add_asiair_power_ports_config()
+{
+	#*	Add ASIAIR Power Ports configuration to config.txt
+	#*	Purpose: Enable 12V GPIO output for ASIAIR power ports
+	#*	Returns: 0 on success, 1 on failure
+	#*	Side Effects: Modifies /boot/config.txt or /boot/firmware/config.txt
+	
+	local config_file
+	local temp_file
+	local in_all_section=false
+	local lines_added=false
+	local comment_line="#Enable 12v gpio output"
+	local gpio_line="gpio=12,13,26,18=op,dh,pu"
+	
+	config_file=$(find_rpi_config_txt)
+	if [ -z "$config_file" ]
+	then
+		log_event "ERROR: Could not find config.txt file (checked /boot/config.txt and /boot/firmware/config.txt)"
+		return 1
+	fi
+	
+	#*	Check if lines already exist
+	if grep -q "^[[:space:]]*#Enable 12v gpio output" "$config_file" 2>/dev/null && \
+	   grep -q "^[[:space:]]*gpio=12,13,26,18=op,dh,pu" "$config_file" 2>/dev/null
+	then
+		log_event "ASIAIR Power Ports configuration already exists in $config_file"
+		return 0
+	fi
+	
+	#*	Create temporary file
+	temp_file=$(mktemp -t config.txt.XXXXXX)
+	
+	#*	Read config file and add lines after [all] section
+	while IFS= read -r line || [ -n "$line" ]
+	do
+		#*	Check if this is the [all] section header
+		if echo "$line" | grep -q "^[[:space:]]*\[all\]"
+		then
+			#*	Write the [all] line
+			printf "%s\n" "$line" >>"$temp_file"
+			#*	Add our lines immediately after [all] section header
+			if [ "$lines_added" = false ]
+			then
+				printf "%s\n" "$comment_line" >>"$temp_file"
+				printf "%s\n" "$gpio_line" >>"$temp_file"
+				lines_added=true
+			fi
+			in_all_section=true
+		elif echo "$line" | grep -q "^[[:space:]]*\["
+		then
+			#*	We've encountered a different section header
+			in_all_section=false
+			printf "%s\n" "$line" >>"$temp_file"
+		else
+			#*	Regular line - write it
+			printf "%s\n" "$line" >>"$temp_file"
+		fi
+	done <"$config_file"
+	
+	#*	If no [all] section found, add it at the end
+	if [ "$lines_added" = false ]
+	then
+		printf "\n[all]\n" >>"$temp_file"
+		printf "%s\n" "$comment_line" >>"$temp_file"
+		printf "%s\n" "$gpio_line" >>"$temp_file"
+		lines_added=true
+	fi
+	
+	#*	Install the modified file (requires sudo)
+	if sudo cp "$temp_file" "$config_file"
+	then
+		sudo chmod 644 "$config_file" 2>/dev/null || true
+		log_event "Successfully added ASIAIR Power Ports configuration to $config_file"
+		rm -f "$temp_file"
+		return 0
+	else
+		log_event "ERROR: Failed to write to $config_file (sudo may have failed)"
+		rm -f "$temp_file"
+		return 1
+	fi
+}
+
+remove_asiair_power_ports_config()
+{
+	#*	Remove ASIAIR Power Ports configuration from config.txt
+	#*	Purpose: Remove 12V GPIO output configuration
+	#*	Returns: 0 on success, 1 on failure
+	#*	Side Effects: Modifies /boot/config.txt or /boot/firmware/config.txt
+	
+	local config_file
+	local temp_file
+	local comment_line="#Enable 12v gpio output"
+	local gpio_line="gpio=12,13,26,18=op,dh,pu"
+	local found_comment=false
+	local found_gpio=false
+	
+	config_file=$(find_rpi_config_txt)
+	if [ -z "$config_file" ]
+	then
+		log_event "ERROR: Could not find config.txt file (checked /boot/config.txt and /boot/firmware/config.txt)"
+		return 1
+	fi
+	
+	#*	Check if lines exist
+	if ! grep -q "^[[:space:]]*#Enable 12v gpio output" "$config_file" 2>/dev/null && \
+	   ! grep -q "^[[:space:]]*gpio=12,13,26,18=op,dh,pu" "$config_file" 2>/dev/null
+	then
+		log_event "ASIAIR Power Ports configuration not found in $config_file"
+		return 0
+	fi
+	
+	#*	Create temporary file
+	temp_file=$(mktemp -t config.txt.XXXXXX)
+	
+	#*	Read config file and remove matching lines
+	while IFS= read -r line || [ -n "$line" ]
+	do
+		#*	Skip the comment line and GPIO line
+		if echo "$line" | grep -q "^[[:space:]]*#Enable 12v gpio output"
+		then
+			found_comment=true
+			continue
+		elif echo "$line" | grep -q "^[[:space:]]*gpio=12,13,26,18=op,dh,pu"
+		then
+			found_gpio=true
+			continue
+		fi
+		
+		#*	Write all other lines
+		printf "%s\n" "$line" >>"$temp_file"
+	done <"$config_file"
+	
+	#*	Install the modified file (requires sudo)
+	if sudo cp "$temp_file" "$config_file"
+	then
+		sudo chmod 644 "$config_file" 2>/dev/null || true
+		log_event "Successfully removed ASIAIR Power Ports configuration from $config_file"
+		rm -f "$temp_file"
+		return 0
+	else
+		log_event "ERROR: Failed to write to $config_file (sudo may have failed)"
+		rm -f "$temp_file"
+		return 1
+	fi
+}
+
 install_usb_rules_for_selected()
 {
 	#*	Install USB rules based on selected drivers
@@ -1640,13 +1809,11 @@ build_selected_alpacapi()
 	#*	Update progress before build starts
 	advance_progress_bar
 	
-	#*	Run build with spinner showing live output
-	#*	IMPORTANT: Use --show-output to show live make output in the TUI
-	#*	tee writes the same output into $build_log so we can persist it
+	#*	IMPORTANT: No --show-output (spinner only)
+	#*	All make output goes into $build_log (not the screen)
 	if gum spin \
-		--show-output \
 		--title "Compiling AlpacaPi (selected drivers)" \
-		-- bash -c "cd \"$repo_root\" && make -f \"$(basename "$custom_makefile")\" -j${cpu_count} alpacapi_selective 2>&1 | tee \"$build_log\""
+		-- bash -c "cd \"$repo_root\" && make -f \"$(basename "$custom_makefile")\" -j${cpu_count} alpacapi_selective >\"$build_log\" 2>&1"
 	then
 		status=0
 	else
@@ -1983,8 +2150,7 @@ state_mode_select()
 		"Remove existing drivers")
 			manual_build_requested=false
 			mode="ModeRemove"
-			installed_review_return_state="stateModeSelect"
-			current_state="stateInstalledReview"
+			current_state="stateRemoveAllDrivers"
 			;;
 		"$build_now_label")
 			manual_build_requested=true
@@ -2082,6 +2248,12 @@ state_manufacturer_select()
 				current_state="statePendingReview"
 				return
 				;;
+			"ASIAIR Power Ports")
+				selected_manufacturer="$selection"
+				set_manufacturer_index "$selection"
+				current_state="stateAsiairPowerPorts"
+				return
+				;;
 			*)
 				selected_manufacturer="$selection"
 				set_manufacturer_index "$selection"
@@ -2172,6 +2344,80 @@ prompt_remove_pending()
 	fi
 }
 
+state_remove_all_drivers()
+{
+	clear
+	banner "Remove All Installed Drivers"
+	show_error
+
+	if [ "${#installed_drivers[@]}" -eq 0 ]
+	then
+		gum style --foreground 244 --align center --width 70 "No installed drivers found in configuration."
+		echo ""
+		if gum confirm "Return to menu?" --default="true"
+		then
+			current_state="stateModeSelect"
+		else
+			exit 0
+		fi
+		return
+	fi
+
+	#*	Show list of installed drivers
+	gum style --foreground 226 --bold "Installed drivers that will be removed:"
+	echo ""
+	for entry in "${installed_drivers[@]}"
+	do
+		gum style "  • $(format_installed_entry "$entry")"
+	done
+	echo ""
+
+	gum style --foreground 196 --bold --align center --width 70 "⚠️  WARNING: This will remove ALL installed drivers from configuration"
+	gum style --align center --width 70 "This will delete the configuration files:"
+	gum style --align center --width 70 "  • $installed_list_file"
+	gum style --align center --width 70 "  • $installed_json_file"
+	echo ""
+	gum style --align center --width 70 "Note: This does not rebuild AlpacaPi or remove driver code."
+	gum style --align center --width 70 "It only removes the configuration records."
+	echo ""
+
+	if gum confirm "Remove all installed drivers from configuration?" --default="false"
+	then
+		#*	Delete configuration files
+		if [ -f "$installed_list_file" ]
+		then
+			rm -f "$installed_list_file"
+			log_event "Deleted configuration file: $installed_list_file"
+		fi
+		if [ -f "$installed_json_file" ]
+		then
+			rm -f "$installed_json_file"
+			log_event "Deleted configuration file: $installed_json_file"
+		fi
+
+		#*	Clear the in-memory array
+		installed_drivers=()
+
+		#*	Show success message
+		clear
+		banner "Configuration Removed"
+		gum style --foreground 46 --bold --align center --width 70 "✓ All installed drivers removed from configuration"
+		echo ""
+		gum style --align center --width 70 "Configuration files have been deleted."
+		gum style --align center --width 70 "The AlpacaPi executable is unchanged."
+		echo ""
+
+		if gum confirm "Return to menu?" --default="true"
+		then
+			current_state="stateModeSelect"
+		else
+			exit 0
+		fi
+	else
+		current_state="stateModeSelect"
+	fi
+}
+
 state_installed_review()
 {
 	if [ "${#installed_drivers[@]}" -eq 0 ]
@@ -2183,12 +2429,7 @@ state_installed_review()
 
 	clear
 	banner "Installed Drivers"
-	if [ "$mode" = "ModeRemove" ]
-	then
-		subtitle "↑/↓ Select • r Remove • p Pending • b Back • q Quit"
-	else
-		subtitle "↑/↓ Select • b Back • q Quit"
-	fi
+	subtitle "↑/↓ Select • b Back • q Quit"
 	show_error
 
 	local options=()
@@ -2210,24 +2451,128 @@ state_installed_review()
 		return
 	fi
 
-	if [ "$mode" = "ModeRemove" ]
+	#*	Just show the selection (review mode - no action taken)
+	current_state="$installed_review_return_state"
+}
+
+state_asiair_power_ports()
+{
+	clear
+	banner "ASIAIR Power Ports Configuration"
+	subtitle "Enable/disable 12V GPIO output for ASIAIR power ports"
+	show_error
+	
+	local config_file
+	config_file=$(find_rpi_config_txt)
+	
+	if [ -z "$config_file" ]
 	then
-		local idx=0
-		for entry in "${installed_drivers[@]}"
-		do
-			if [ "$(format_installed_entry "$entry")" = "$selection" ]
-			then
-				IFS='|' read -r category manufacturer model version <<<"$entry"
-				add_pending_driver "$category" "$manufacturer" "$model" "Remove"
-				err_message="Queued $model for removal."
-				current_state="statePendingReview"
-				return
-			fi
-			idx=$((idx + 1))
-		done
-	else
-		current_state="$installed_review_return_state"
+		gum style --foreground 196 --bold --align center --width 70 "ERROR: Could not find config.txt file"
+		gum style --align center --width 70 "Expected locations:"
+		gum style --align center --width 70 "  • /boot/config.txt"
+		gum style --align center --width 70 "  • /boot/firmware/config.txt"
+		echo ""
+		if gum confirm "Return to menu?" --default="true"
+		then
+			current_state="stateDeviceCategorySelect"
+		else
+			exit 0
+		fi
+		return
 	fi
+	
+	#*	Check current status
+	local is_enabled=false
+	if grep -q "^[[:space:]]*#Enable 12v gpio output" "$config_file" 2>/dev/null && \
+	   grep -q "^[[:space:]]*gpio=12,13,26,18=op,dh,pu" "$config_file" 2>/dev/null
+	then
+		is_enabled=true
+		gum style --foreground 46 --bold --align center --width 70 "✓ ASIAIR Power Ports are currently ENABLED"
+	else
+		gum style --foreground 244 --align center --width 70 "ASIAIR Power Ports are currently DISABLED"
+	fi
+	echo ""
+	gum style --align center --width 70 "Config file: $config_file"
+	echo ""
+	
+	local options=()
+	if [ "$is_enabled" = true ]
+	then
+		options+=("Remove configuration (disable)")
+	else
+		options+=("Add configuration (enable)")
+	fi
+	options+=("Back to device selection")
+	
+	local choice
+	choice=$(gum choose --cursor="➤" "${options[@]}") || {
+		current_state="stateDeviceCategorySelect"
+		return
+	}
+	
+	case "$choice" in
+		"Add configuration (enable)")
+			clear
+			banner "Enabling ASIAIR Power Ports"
+			gum style --align center --width 70 "Adding configuration to $config_file..."
+			echo ""
+			
+			if add_asiair_power_ports_config
+			then
+				gum style --foreground 46 --bold --align center --width 70 "✓ Configuration added successfully"
+				echo ""
+				gum style --foreground 226 --bold --align center --width 70 "⚠️  REBOOT REQUIRED"
+				gum style --align center --width 70 "The configuration has been added to $config_file"
+				gum style --align center --width 70 "You must reboot your Raspberry Pi for changes to take effect."
+				echo ""
+				log_event "ASIAIR Power Ports configuration added successfully"
+			else
+				gum style --foreground 196 --bold --align center --width 70 "✗ Failed to add configuration"
+				gum style --align center --width 70 "Check log file for details: $log_file"
+				echo ""
+				log_event "ERROR: Failed to add ASIAIR Power Ports configuration"
+			fi
+			
+			if gum confirm "Return to menu?" --default="true"
+			then
+				current_state="stateDeviceCategorySelect"
+			else
+				exit 0
+			fi
+			;;
+		"Remove configuration (disable)")
+			clear
+			banner "Disabling ASIAIR Power Ports"
+			gum style --align center --width 70 "Removing configuration from $config_file..."
+			echo ""
+			
+			if remove_asiair_power_ports_config
+			then
+				gum style --foreground 46 --bold --align center --width 70 "✓ Configuration removed successfully"
+				echo ""
+				gum style --foreground 226 --bold --align center --width 70 "⚠️  REBOOT REQUIRED"
+				gum style --align center --width 70 "The configuration has been removed from $config_file"
+				gum style --align center --width 70 "You must reboot your Raspberry Pi for changes to take effect."
+				echo ""
+				log_event "ASIAIR Power Ports configuration removed successfully"
+			else
+				gum style --foreground 196 --bold --align center --width 70 "✗ Failed to remove configuration"
+				gum style --align center --width 70 "Check log file for details: $log_file"
+				echo ""
+				log_event "ERROR: Failed to remove ASIAIR Power Ports configuration"
+			fi
+			
+			if gum confirm "Return to menu?" --default="true"
+			then
+				current_state="stateDeviceCategorySelect"
+			else
+				exit 0
+			fi
+			;;
+		"Back to device selection")
+			current_state="stateDeviceCategorySelect"
+			;;
+	esac
 }
 
 state_install_progress()
@@ -2443,6 +2788,8 @@ run_wizard()
 			"stateManufacturerSelect") state_manufacturer_select ;;
 			"statePendingReview") state_pending_review ;;
 			"stateInstalledReview") state_installed_review ;;
+			"stateRemoveAllDrivers") state_remove_all_drivers ;;
+			"stateAsiairPowerPorts") state_asiair_power_ports ;;
 			"stateInstallProgress") state_install_progress ;;
 			"stateResult") state_result ;;
 			*)
