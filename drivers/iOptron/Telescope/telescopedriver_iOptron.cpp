@@ -84,6 +84,7 @@ static int	iOptron_SendCommand(	const int		socket_desc,
 									char			*returnBuffer,
 									const int		maxBufferLen);
 static bool	CheckForValidResponse(const char *iOptronResponseString);
+static void	iOptron_FlushInput(const int socket_desc);
 static double	iOptron_ParseDegMinSec(char *dataBuffer);
 static double	iOptron_ParseRA(char *dataBuffer);
 
@@ -432,7 +433,12 @@ bool	isValid;
 	}
 	else
 	{
-		cIOptron_CommErrCnt++;
+		//*	Only increment error count if connection is still supposed to be open
+		//*	If connection was closed, this is expected and not an error
+		if (cTelescopeConnectionOpen)
+		{
+			cIOptron_CommErrCnt++;
+		}
 	}
 
 	//--------------------------------------------------------------------------
@@ -440,12 +446,17 @@ bool	isValid;
 	//*	This returns longitude, latitude and all kinds of status
 	//*	Response format: sTTTTTTTTTTTTTTTTnnnnnn#
 	//*	Includes GPS status, system status, tracking rates, etc.
+	//*	Re-check connection state before second command (may have disconnected)
+	if (!cTelescopeConnectionOpen)
+	{
+		return(isValid);
+	}
 	if (cDeviceConnType == kDevCon_Ethernet)
 	{
 		//*	Check if socket is valid
 		if (cSocket_desc <= 0)
 		{
-			return(false);
+			return(isValid);
 		}
 		returnByteCnt	=	iOptron_SendCommand(cSocket_desc, ":GLS#", returnBuffer, 400);
 	}
@@ -454,14 +465,29 @@ bool	isValid;
 		//*	Check if file descriptor is valid
 		if (cDeviceConnFileDesc < 0)
 		{
-			return(false);
+			return(isValid);
 		}
 		returnByteCnt	=	iOptron_SendCommand(cDeviceConnFileDesc, ":GLS#", returnBuffer, 400);
 	}
 	if (returnByteCnt > 0)
 	{
-		Process_GLS_Response(returnBuffer);
+		bool	glsValid;
+
+		glsValid	=	Process_GLS_Response(returnBuffer);
+		if (!glsValid)
+		{
+			cIOptron_CommErrCnt++;
+		}
 		usleep(100000);
+	}
+	else
+	{
+		//*	Only increment error count if connection is still supposed to be open
+		//*	If connection was closed, this is expected and not an error
+		if (cTelescopeConnectionOpen)
+		{
+			cIOptron_CommErrCnt++;
+		}
 	}
 
 	return(isValid);
@@ -986,7 +1012,9 @@ int		sign;
 	if (isValid)
 	{
 		strLen	=	strlen(dataBuffer);
-		if (strLen >= 20)	//*	Sign + 19 digits + '#'
+		//*	GEP response must be exactly 21 characters: sign + 19 digits + '#'
+		//*	Format: sTTTTTTTTTTTTTTTTTnn# (sign + 8 DEC + 9 RA + 1 pier + 1 pointing + #)
+		if (strLen == 21)
 		{
 			//*	Parse DEC (sign + first 8 digits)
 			sign	=	(dataBuffer[0] == '-') ? -1 : 1;
@@ -1017,6 +1045,12 @@ int		sign;
 				strcpy(cTelescopeDEC_String, dataBuffer);
 			}
 		}
+		else
+		{
+			//*	Invalid length - log for debugging
+			CONSOLE_DEBUG_W_NUM("GEP response invalid length, expected 21, got", strLen);
+			isValid	=	false;
+		}
 	}
 	return(isValid);
 }
@@ -1039,18 +1073,70 @@ bool	isValid;
 int		strLen;
 int		systemStatus;
 int		trackingRate;
+char	lonStr[16];
+char	latStr[16];
+int64_t	longitude_arcsec_01;
+int64_t	latitude_arcsec_01;
+double	longitude_degrees;
+double	latitude_degrees;
+int		sign;
+int		hemisphere;
 
 	isValid	=	CheckForValidResponse(dataBuffer);
 	if (isValid)
 	{
 		strLen	=	strlen(dataBuffer);
-		if (strLen >= 23)	//*	Sign + 22 digits + '#'
+		//*	GLS response must be exactly 24 characters: sign + 22 digits + '#'
+		//*	Format: sTTTTTTTTTTTTTTTTnnnnnn# (sign + 8 longitude + 8 latitude + 6 status digits + #)
+		if (strLen == 24)
 		{
 			//*	Store status string
 			if (strLen < 64)
 			{
 				strcpy(cTelescopeStatus_String, dataBuffer);
 			}
+
+			//*	Parse longitude (sign + first 8 digits, indices 0-8)
+			sign	=	(dataBuffer[0] == '-') ? -1 : 1;
+			strncpy(lonStr, &dataBuffer[1], 8);
+			lonStr[8]	=	0;
+			longitude_arcsec_01	=	atoll(lonStr) * sign;
+			longitude_degrees	=	longitude_arcsec_01 / (3600.0 * 100.0);
+			//*	Update site longitude if valid
+			if ((longitude_degrees >= -180.0) && (longitude_degrees <= 180.0))
+			{
+				cTelescopeProp.SiteLongitude	=	longitude_degrees;
+			}
+
+			//*	Parse latitude (9th to 16th digits, indices 9-16, 8 digits total)
+			//*	Note: iOptron returns latitude + 90 degrees, so we need to subtract 90
+			strncpy(latStr, &dataBuffer[9], 8);
+			latStr[8]	=	0;
+			latitude_arcsec_01	=	atoll(latStr);
+			latitude_degrees	=	(latitude_arcsec_01 / (3600.0 * 100.0)) - 90.0;
+			//*	Update site latitude if valid
+			if ((latitude_degrees >= -90.0) && (latitude_degrees <= 90.0))
+			{
+				cTelescopeProp.SiteLatitude	=	latitude_degrees;
+			}
+
+			//*	Parse hemisphere (22nd digit, index 22) - 0=South, 1=North
+			hemisphere	=	dataBuffer[22] - '0';
+			//*	If hemisphere doesn't match latitude sign, adjust
+			if ((hemisphere == 0) && (cTelescopeProp.SiteLatitude > 0.0))
+			{
+				cTelescopeProp.SiteLatitude	=	-cTelescopeProp.SiteLatitude;
+			}
+			else if ((hemisphere == 1) && (cTelescopeProp.SiteLatitude < 0.0))
+			{
+				cTelescopeProp.SiteLatitude	=	-cTelescopeProp.SiteLatitude;
+			}
+
+			//*	Note: Site elevation is NOT provided by iOptron mount responses
+			//*	Elevation must be set via:
+			//*		1. Observatory settings file (libs/observatorysettings.txt)
+			//*		2. Alpaca API PUT request to /api/v1/telescope/0/siteelevation
+			//*	The elevation value is preserved from observatory settings initialization
 
 			//*	Parse system status (18th digit, index 18)
 			systemStatus	=	dataBuffer[18] - '0';
@@ -1113,6 +1199,12 @@ int		trackingRate;
 					break;
 			}
 		}
+		else
+		{
+			//*	Invalid length - log for debugging
+			CONSOLE_DEBUG_W_NUM("GLS response invalid length, expected 24, got", strLen);
+			isValid	=	false;
+		}
 	}
 	return(isValid);
 }
@@ -1136,11 +1228,27 @@ struct timeval	timeout;
 	returnBuffer[0]	=	0;
 	totalBytesRead	=	0;
 
+	//*	Flush any leftover data before sending command
+	//*	Skip flush if socket is invalid (connection may be closed)
+	if (socket_desc > 0)
+	{
+		iOptron_FlushInput(socket_desc);
+	}
+	else
+	{
+		return(0);
+	}
+
 	//*	Send command
 	bytesWritten	=	write(socket_desc, cmdString, strlen(cmdString));
 	if (bytesWritten < 0)
 	{
-		CONSOLE_DEBUG_W_NUM("Write error, errno\t=", errno);
+		//*	errno 9 (EBADF) means bad file descriptor - connection was closed
+		//*	This is expected during disconnect, so don't log as error
+		if (errno != EBADF)
+		{
+			CONSOLE_DEBUG_W_NUM("Write error, errno\t=", errno);
+		}
 		return(0);
 	}
 	if (bytesWritten != (int)strlen(cmdString))
@@ -1170,8 +1278,28 @@ struct timeval	timeout;
 				returnBuffer[totalBytesRead++]	=	readChar;
 				returnBuffer[totalBytesRead]		=	0;
 				//*	iOptron commands typically end with '#'
+				//*	Continue reading to consume any trailing whitespace/control chars
 				if (readChar == '#')
 				{
+					//*	Try to read one more character (likely \n or \r) with short timeout
+					struct timeval	shortTimeout;
+					shortTimeout.tv_sec	=	0;
+					shortTimeout.tv_usec	=	50000;	//*	50ms timeout
+					FD_ZERO(&readFds);
+					FD_SET(socket_desc, &readFds);
+					if (select(socket_desc + 1, &readFds, NULL, NULL, &shortTimeout) > 0)
+					{
+						bytesRead	=	read(socket_desc, &readChar, 1);
+						if (bytesRead > 0)
+						{
+							//*	Only include if it's whitespace/control character
+							if ((readChar == '\n') || (readChar == '\r') || (readChar == ' ') || (readChar == '\t'))
+							{
+								returnBuffer[totalBytesRead++]	=	readChar;
+								returnBuffer[totalBytesRead]		=	0;
+							}
+						}
+					}
 					break;
 				}
 			}
@@ -1195,6 +1323,16 @@ struct timeval	timeout;
 	}
 	if (totalBytesRead > 0)
 	{
+		//*	Trim trailing whitespace and control characters
+		while ((totalBytesRead > 0) && 
+		       ((returnBuffer[totalBytesRead - 1] == '\n') || 
+		        (returnBuffer[totalBytesRead - 1] == '\r') || 
+		        (returnBuffer[totalBytesRead - 1] == ' ') || 
+		        (returnBuffer[totalBytesRead - 1] == '\t')))
+		{
+			totalBytesRead--;
+			returnBuffer[totalBytesRead]	=	0;
+		}
 		CONSOLE_DEBUG_W_STR("Response received\t=", returnBuffer);
 	}
 	else
@@ -1223,6 +1361,52 @@ int		strLen;
 		}
 	}
 	return(isValid);
+}
+
+//*****************************************************************************
+//*	Flush any leftover data from the socket/file descriptor
+//*****************************************************************************
+static void	iOptron_FlushInput(const int socket_desc)
+{
+fd_set		readFds;
+struct timeval	timeout;
+char		dummyChar;
+int		bytesRead;
+int		selectResult;
+
+	//*	Read and discard any available data with a short timeout
+	//*	Skip if socket is invalid (connection may be closed)
+	if (socket_desc <= 0)
+	{
+		return;
+	}
+	timeout.tv_sec	=	0;
+	timeout.tv_usec	=	10000;	//*	10ms timeout
+	while (1)
+	{
+		FD_ZERO(&readFds);
+		FD_SET(socket_desc, &readFds);
+		selectResult	=	select(socket_desc + 1, &readFds, NULL, NULL, &timeout);
+		if (selectResult > 0)
+		{
+			bytesRead	=	read(socket_desc, &dummyChar, 1);
+			if (bytesRead <= 0)
+			{
+				//*	EOF, connection closed, or error (including EBADF)
+				break;
+			}
+		}
+		else if (selectResult < 0)
+		{
+			//*	select() error (likely EBADF if socket was closed)
+			break;
+		}
+		else
+		{
+			//*	No more data available (timeout)
+			break;
+		}
+	}
 }
 
 //*****************************************************************************

@@ -2778,15 +2778,79 @@ struct timeval			currentTime;
 }
 
 //*****************************************************************************
+//*	Parse ISO8601 date string (format: "2022-05-30T13:49:10.4766414Z" or "2022-05-30T13:49:10Z")
+//*	Returns true if successful, false otherwise
+//*****************************************************************************
+static bool	ParseISO8601DateString(const char *iso8601String, struct timeval *tv)
+{
+struct tm		timeStruct;
+int				year, month, day, hour, min, sec;
+long			millisecs;
+char			*tzPtr;
+char			*msPtr;
+bool			parseOK;
+
+	parseOK	=	false;
+	memset(&timeStruct, 0, sizeof(timeStruct));
+	memset(tv, 0, sizeof(struct timeval));
+
+	//*	Parse format: YYYY-MM-DDTHH:MM:SS[.SSS][Z]
+	//*	Example: "2022-05-30T13:49:10.4766414Z" or "2022-05-30T13:49:10Z"
+	if (strlen(iso8601String) >= 19)	//*	Minimum: "2022-05-30T13:49:10"
+	{
+		if (sscanf(iso8601String, "%d-%d-%dT%d:%d:%d", &year, &month, &day, &hour, &min, &sec) == 6)
+		{
+			//*	Check for milliseconds
+			msPtr	=	const_cast<char *>(strchr(iso8601String, '.'));
+			if (msPtr != NULL)
+			{
+				millisecs	=	atol(msPtr + 1);
+				//*	Handle fractional seconds (could be .4766414 or .476)
+				if (millisecs > 999)
+				{
+					//*	If more than 3 digits, truncate to milliseconds
+					while (millisecs > 999)
+					{
+						millisecs	/=	10;
+					}
+				}
+			}
+			else
+			{
+				millisecs	=	0;
+			}
+
+			//*	Build time structure (UTC time)
+			timeStruct.tm_year	=	year - 1900;
+			timeStruct.tm_mon	=	month - 1;
+			timeStruct.tm_mday	=	day;
+			timeStruct.tm_hour	=	hour;
+			timeStruct.tm_min	=	min;
+			timeStruct.tm_sec	=	sec;
+			timeStruct.tm_isdst	=	0;	//*	UTC has no DST
+
+			//*	Convert to time_t (UTC)
+			tv->tv_sec	=	timegm(&timeStruct);
+			if (tv->tv_sec != -1)
+			{
+				tv->tv_usec	=	millisecs * 1000;	//*	Convert milliseconds to microseconds
+				parseOK		=	true;
+			}
+		}
+	}
+
+	return(parseOK);
+}
+
+//*****************************************************************************
 TYPE_ASCOM_STATUS	TelescopeDriver::Put_UTCdate(TYPE_GetPutRequestData *reqData, char *alpacaErrMsg)
 {
 TYPE_ASCOM_STATUS		alpacaErrCode	=	kASCOM_Err_MethodNotImplemented;
 bool					utcDateFound;
 char					utcDateString[64];
+struct timeval			utcTime;
 
 	CONSOLE_DEBUG(__FUNCTION__);
-//	CONSOLE_DEBUG(reqData->contentData);
-
 
 	utcDateFound	=	GetKeyWordArgument(	reqData->contentData,
 											"UTCDate",
@@ -2794,21 +2858,19 @@ char					utcDateString[64];
 											sizeof(utcDateString));
 	if (utcDateFound)
 	{
-		//*	we have to parse the ISO8601 time string
-		if (IsValidNumericString(utcDateString))
+		//*	Parse the ISO8601 time string
+		if (ParseISO8601DateString(utcDateString, &utcTime))
 		{
-
+			//*	Call mount-specific implementation (if supported)
+			alpacaErrCode	=	Telescope_SetUTCDate(&utcTime, alpacaErrMsg);
 		}
 		else
 		{
 			alpacaErrCode			=	kASCOM_Err_InvalidValue;
 			reqData->httpRetCode	=	400;
-			GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "UTCDate is ill-formated");
+			GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "UTCDate is ill-formatted");
 			CONSOLE_DEBUG(alpacaErrMsg);
 		}
-		alpacaErrCode	=	kASCOM_Err_MethodNotImplemented;
-		GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "UTCDate not implemented");
-		CONSOLE_DEBUG(alpacaErrMsg);
 	}
 	else
 	{
@@ -2817,8 +2879,20 @@ char					utcDateString[64];
 		GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "UTCDate is missing");
 		CONSOLE_DEBUG(alpacaErrMsg);
 	}
-	alpacaErrCode	=	kASCOM_Err_MethodNotImplemented;
-//	DumpRequestStructure(__FUNCTION__, reqData);
+
+	return(alpacaErrCode);
+}
+
+//*****************************************************************************
+//*	Default implementation - returns NotImplemented
+//*	Mount-specific drivers should override this if they support setting UTC date/time
+//*****************************************************************************
+TYPE_ASCOM_STATUS	TelescopeDriver::Telescope_SetUTCDate(const struct timeval *utcTime, char *alpacaErrMsg)
+{
+TYPE_ASCOM_STATUS		alpacaErrCode	=	kASCOM_Err_MethodNotImplemented;
+
+	//*	Default: not implemented (mount-specific drivers can override)
+	GENERATE_ALPACAPI_ERRMSG(alpacaErrMsg, "UTCDate setting not supported by this mount");
 	return(alpacaErrCode);
 }
 

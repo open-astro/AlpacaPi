@@ -22,7 +22,7 @@ This document lists all supported hardware vendors and device types in AlpacaPi 
 | Vendor | Models | Connection | Status |
 |--------|--------|------------|--------|
 | **Explore Scientific** | PMC-8 mounts | USB/Serial | ✅ Supported |
-| **iOptron** | CEM120, CEM70, GEM45, CEM40, GEM28, CEM26 series | USB/Serial, Ethernet | ✅ Supported |
+| **iOptron** | CEM, GEM, HEM, HAE, HAZ series, SkyHunter | USB/Serial, Ethernet | ✅ Supported |
 | **LX200** | Meade LX200 compatible mounts | TCP/IP | ✅ Supported |
 | **Rigel** | Rigel mounts | USB/Serial | ✅ Supported |
 | **Servo** | Servo-based mounts | Custom | ✅ Supported |

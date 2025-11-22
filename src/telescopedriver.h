@@ -195,6 +195,9 @@ virtual	TYPE_ASCOM_STATUS	Get_Readall(			TYPE_GetPutRequestData *reqData, char *
 
 virtual	bool				DeviceState_Add_Content(const int socketFD, char *jsonTextBuffer, const int maxLen);
 
+		//*	Mount-specific UTC date/time setting (override in mount drivers that support it)
+		virtual	TYPE_ASCOM_STATUS	Telescope_SetUTCDate(	const struct timeval *utcTime, char *alpacaErrMsg);
+
 		//*************************************************************************
 		//*	DO NOT IMPLEMENT THE SYNCHRONOUS METHODS
 		//*		Use the ASYNC methods instead
