@@ -62,10 +62,12 @@ This document lists all supported hardware vendors and device types in AlpacaPi 
 | **RaspberryPi** | Custom dome controllers | GPIO | ✅ Supported | ✅ Yes | ⚠️ Recommended |
 | **Simulator** | Software simulator for testing | N/A | ✅ Supported | ❌ No | ❌ No |
 
-## Switch Drivers
+
+## GPIO / Aux Devices
 
 | Vendor | Models | Connection | Status | Requires wiringPi | Requires 32-bit RPi OS |
 |--------|--------|------------|--------|-------------------|----------------------|
+| **ASIAIR Power Ports** | All 4 power ports (12V GPIO output) | GPIO | ✅ Supported | ❌ No | ❌ No |
 | **RaspberryPi** | GPIO-based switches | GPIO | ✅ Supported | ✅ Yes | ⚠️ Recommended |
 
 ## Observing Conditions Drivers
@@ -97,6 +99,13 @@ This document lists all supported hardware vendors and device types in AlpacaPi 
   - **Ethernet**: Network-based connection (TCP/IP)
   - **GPIO**: Raspberry Pi GPIO pins
   - **I2C**: I2C bus communication
+
+- **ASIAIR Power Ports**:
+  - All 4 power ports (GPIO pins 12, 13, 26, 18) are controlled together via Raspberry Pi config.txt
+  - Configuration is managed through the setup wizard (GPIO / Aux → ASIAIR Power Ports)
+  - Enables/disables 12V GPIO output for all ports simultaneously
+  - Requires system reboot after configuration changes
+  - Works on both 32-bit and 64-bit Raspberry Pi OS
 
 - **wiringPi Requirements**: 
   - Drivers marked with ✅ **Yes** require the wiringPi library for GPIO control on Raspberry Pi
