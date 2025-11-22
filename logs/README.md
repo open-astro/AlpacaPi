@@ -3,19 +3,14 @@
 ## Overview
 
 AlpacaPi implements a comprehensive logging and user agent recognition system that:
-- Recognizes official ASCOM Alpaca clients
+- Recognizes official ASCOM Alpaca clients using hardcoded string matching
 - Logs unknown clients for self-learning
-- Provides configurable client recognition without recompilation
 - Maintains statistics on client usage
 
 ## Folder Structure
 
 ```
 AlpacaPi/
-├── assets/                    # Configuration files (no recompilation needed)
-│   ├── user_agents.json       # User agent to client type mappings
-│   └── README.md             # Assets folder documentation
-│
 └── logs/                      # Runtime log files
     ├── README.md             # This file - complete logging documentation
     ├── new_clients-YYYY-MM-DD-PORT.log    # Unknown user agents (self-learning)
@@ -25,47 +20,28 @@ AlpacaPi/
 
 ## User Agent Recognition System
 
-### Recognition Priority
+### Recognition Method
 
-The system checks user agents in this order:
-
-1. **JSON Configuration** (`assets/user_agents.json`) - Configurable without recompilation
-2. **Hardcoded List** - Backwards compatible fallback
-3. **Unknown** - Logged to `logs/new_clients.log` for review
+The system uses hardcoded string matching to recognize user agents:
+1. **Hardcoded List** - Direct string comparison against known clients
+2. **Unknown** - Logged to `logs/new_clients-YYYY-MM-DD-PORT.log` for review
 
 ### Recognized Client Types
 
-#### JSON-Configurable Clients (in `assets/user_agents.json`)
-- `ASCOMAlpacaClient` → `kHTTPclient_ASCOM_AlpacaClient`
-- `NINA` → `kHTTPclient_NINA`
-- `SkySafari` → `kHTTPclient_SkySafari`
+All client recognition is performed using hardcoded string comparisons in `ParseHTMLdataIntoReqStruct()`:
 
-#### Hardcoded Clients (for backwards compatibility)
 - `AlpacaPi` → `kHTTPclient_AlpacaPi`
 - `ConformU` / `Conform` → `kHTTPclient_ConfomU`
 - `RestSharp` → `kHTTPclient_ASCOM_RestSharp`
 - `curl` → `kHTTPclient_Curl`
 - `Mozilla` → `kHTTPclient_Mozilla`
+- `NINA` → `kHTTPclient_NINA`
+- `ASCOMAlpacaClient` → `kHTTPclient_ASCOM_AlpacaClient`
+- `SkySafari` → `kHTTPclient_SkySafari`
 
 ### Adding New Clients
 
-#### Method 1: JSON Configuration (No Recompilation)
-
-1. Edit `assets/user_agents.json`:
-```json
-{
-	"ASCOMAlpacaClient": "kHTTPclient_ASCOM_AlpacaClient",
-	"NINA": "kHTTPclient_NINA",
-	"SkySafari": "kHTTPclient_SkySafari",
-	"YourNewClient": "kHTTPclient_YourNewClient"
-}
-```
-
-2. **Note**: The enum value must already exist in the code. For new enum values, see Method 2.
-
-3. Restart AlpacaPi - the new client will be recognized immediately.
-
-#### Method 2: Adding New Enum Value (Requires Recompilation)
+To add a new client type, you must modify the source code and recompile:
 
 1. **Add enum value** to `src/RequestData.h`:
 ```cpp
@@ -92,23 +68,15 @@ const char	*gUserAgentNames[]	=
 };
 ```
 
-3. **Add mapping** to `assets/user_agents.json`:
-```json
-{
-	"YourNewClient": "kHTTPclient_YourNewClient"
-}
-```
-
-4. **Update `LoadUserAgentMappings()`** in `src/alpacadriver.cpp` to handle the new enum:
+3. **Add string comparison** in `ParseHTMLdataIntoReqStruct()` function in `src/alpacadriver.cpp`:
 ```cpp
-else if (strcmp(enumName, "kHTTPclient_YourNewClient") == 0)
+else if (strncasecmp(reqData->httpUserAgent, "YourNewClient", 13) == 0)
 {
-	clientType	=	kHTTPclient_YourNewClient;
-	foundMapping	=	true;
+	reqData->cHTTPclientType	=   kHTTPclient_YourNewClient;
 }
 ```
 
-5. Recompile and restart AlpacaPi.
+4. Recompile and restart AlpacaPi.
 
 ## Logging System
 
@@ -131,7 +99,7 @@ YYYY/MM/DD HH:MM:SS    ClientIP              User-Agent-String
 
 **Usage**:
 - Review this log periodically to identify new clients
-- Add frequently-seen clients to `assets/user_agents.json`
+- Add frequently-seen clients to the hardcoded detection list
 - Helps track which clients are connecting to your server
 
 **Location**: Created automatically in `logs/` folder
@@ -161,7 +129,7 @@ YYYY/MM/DD HH:MM:SS    ClientIP              User-Agent    GET/PUT    Request-UR
 **Normal Mode** (default):
 - Unrecognized user agents are **NOT** logged to console
 - Reduces log noise
-- Unknown clients still logged to `logs/new_clients.log`
+- Unknown clients still logged to `logs/new_clients-YYYY-MM-DD-PORT.log`
 
 ### Statistics
 
@@ -176,95 +144,73 @@ All user agents (recognized and unrecognized) are tracked in statistics:
 ### Code Flow
 
 1. **Startup** (`main()` function):
-   - `LoadUserAgentMappings()` reads `assets/user_agents.json`
-   - Parses JSON using `SJP_ParseData()` (simple JSON parser)
-   - Populates `gUserAgentMappings[]` array
+   - Initializes `gUserAgentCounters[]` array to zero
+   - No configuration files are loaded
 
 2. **Request Processing** (`ParseHTMLdataIntoReqStruct()` function):
    - Extracts User-Agent header from HTTP request
-   - Calls `CheckUserAgentFromJSON()` to check JSON mappings first
-   - Falls back to hardcoded string comparisons
-   - If still unrecognized, calls `LogUnknownUserAgent()`
+   - Performs hardcoded string comparisons using `strncasecmp()`
+   - If recognized, sets `reqData->cHTTPclientType` to appropriate enum value
+   - If unrecognized, sets to `kHTTPclient_NotRecognized` and calls `LogUnknownUserAgent()`
+   - Increments appropriate counter in `gUserAgentCounters[]`
 
 3. **Logging** (`LogUnknownUserAgent()` function):
    - Opens/creates `logs/new_clients-YYYY-MM-DD-PORT.log`
    - Writes timestamp, client IP, and user agent string
+   - Implements deduplication to avoid logging the same user agent repeatedly
    - Flushes immediately for reliability
 
 ### Key Functions
 
-#### `LoadUserAgentMappings()`
+#### `ParseHTMLdataIntoReqStruct()`
 - **Location**: `src/alpacadriver.cpp`
-- **Purpose**: Load user agent mappings from JSON file at startup
-- **Returns**: Number of mappings loaded
-- **Called**: Once during `main()` initialization
-
-#### `CheckUserAgentFromJSON()`
-- **Location**: `src/alpacadriver.cpp`
-- **Purpose**: Check if user agent matches a JSON-loaded mapping
-- **Returns**: `TYPE_Client` enum value or `kHTTPclient_NotRecognized`
-- **Called**: For every HTTP request with a User-Agent header
+- **Purpose**: Parse HTTP request and identify user agent
+- **User Agent Detection**: Performs hardcoded string comparisons
+- **Called**: For every HTTP request
 
 #### `LogUnknownUserAgent()`
 - **Location**: `src/alpacadriver.cpp`
-- **Purpose**: Log unknown user agents to `logs/new_clients.log`
+- **Purpose**: Log unknown user agents to `logs/new_clients-YYYY-MM-DD-PORT.log`
 - **Parameters**: User agent string, client IP address
-- **Called**: When user agent is not recognized in JSON or hardcoded list
-
-### Data Structures
-
-#### `TYPE_UserAgentMapping`
-```cpp
-typedef struct
-{
-	char	userAgentPrefix[64];
-	TYPE_Client	clientType;
-} TYPE_UserAgentMapping;
-```
-
-- **Storage**: `gUserAgentMappings[kMaxUserAgentMappings]`
-- **Limit**: 32 mappings (defined by `kMaxUserAgentMappings`)
-- **Populated**: At startup from JSON file
+- **Called**: When user agent is not recognized in hardcoded list
 
 ## Troubleshooting
 
 ### Issue: User agent not being recognized
 
 **Check**:
-1. Is it in `assets/user_agents.json`?
-2. Does the enum value exist in `RequestData.h`?
-3. Is the name in `gUserAgentNames[]`?
-4. Check `logs/new_clients.log` - is it being logged there?
+1. Does the enum value exist in `RequestData.h`?
+2. Is the name in `gUserAgentNames[]`?
+3. Is the string comparison added in `ParseHTMLdataIntoReqStruct()`?
+4. Check `logs/new_clients-YYYY-MM-DD-PORT.log` - is it being logged there?
 
 **Solution**:
 - Follow "Adding New Clients" steps above
-- Verify JSON syntax is correct
-- Check console for parsing errors (verbose mode)
+- Verify the string comparison matches the user agent prefix correctly
+- Check console for errors (verbose mode)
 
 ### Issue: Too many unknown clients in log
 
 **Solution**:
-- Review `logs/new_clients.log` periodically
-- Add frequently-seen clients to JSON configuration
-- Consider adding common clients to hardcoded list if they're very common
+- Review `logs/new_clients-YYYY-MM-DD-PORT.log` periodically
+- Add frequently-seen clients to the hardcoded detection list
+- Consider case sensitivity - user agent matching is case-insensitive
 
-### Issue: JSON file not loading
+### Issue: Client recognized but wrong type
 
 **Check**:
-1. File exists at `assets/user_agents.json`
-2. File is readable
-3. JSON syntax is valid
-4. Check verbose mode for error messages
+1. Verify the string comparison order in `ParseHTMLdataIntoReqStruct()`
+2. More specific matches should come before less specific ones
+3. Check that enum value matches the intended client type
 
 **Solution**:
-- System will fall back to hardcoded list if JSON doesn't load
-- Fix JSON syntax and restart
-- Check file permissions
+- Reorder string comparisons if needed
+- Verify enum value assignment
 
 ## Best Practices
 
-1. **Regular Review**: Check `logs/new_clients.log` weekly to identify new clients
-2. **JSON Updates**: Prefer JSON configuration over code changes when possible
+1. **Regular Review**: Check `logs/new_clients-YYYY-MM-DD-PORT.log` weekly to identify new clients
+2. **String Matching**: Use appropriate prefix length in `strncasecmp()` to avoid false matches
 3. **Enum Management**: Keep enum values in sync with `gUserAgentNames[]` array
 4. **Documentation**: Document any custom clients you add
 5. **Log Rotation**: Consider implementing log rotation for long-running servers
@@ -276,12 +222,9 @@ Potential improvements:
 - Web interface to view/add user agents
 - Statistics on unknown client frequency
 - Auto-suggest adding clients that appear frequently
-- Support for wildcard matching in JSON
+- Configuration file support for easier client addition
 
 ## Related Files
 
-- `src/alpacadriver.cpp` - Main implementation
-- `src/RequestData.h` - Enum definitions
-- `assets/user_agents.json` - Configuration file
-- `libs/src_mlsLib/json_parse.c` - JSON parser library
-
+- `src/alpacadriver.cpp` - Main implementation (user agent detection and logging)
+- `src/RequestData.h` - Enum definitions (`TYPE_Client`)
