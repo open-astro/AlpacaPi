@@ -1,8 +1,7 @@
 //**************************************************************************
 //*	Name:			telescopedriver_iOptron.cpp
 //*
-//*	Author:			Mark Sproul (C) 2024
-//*					Joey Troy (C) 2025
+//*	Author:			Joey Troy (C) 2025
 //*
 //*	Description:	C++ Driver for Alpaca protocol
 //*
@@ -31,11 +30,8 @@
 //*****************************************************************************
 //*	Edit History
 //*****************************************************************************
-//*	<MLS>	=	Mark L Sproul
 //*	<JT>	=	Joey Troy
 //*****************************************************************************
-//*	Dec 20,	2024	<MLS> Created telescopedriver_iOptron.cpp
-//*	Nov 11,	2025	<JT>  Initial implementation based on LX200 pattern
 //*	Nov 11,	2025	<JT>  Adapted for iOptron command protocol
 //*****************************************************************************
 

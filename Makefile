@@ -132,6 +132,24 @@ ASI_INCLUDE_DIR	=	./sdk/ZWO_ASI_SDK/include
 EFW_LIB_DIR		=	./sdk/ZWO_EFW_SDK
 ZWO_EAF_DIR			=	./sdk/ZWO_EAF_SDK/include
 ZWO_EAF_LIB_DIR		=	./sdk/ZWO_EAF_SDK/lib/$(PLATFORM)/
+ZWO_CAA_DIR			=	./sdk/ZWO_CAA_SDK/include
+ZWO_CAA_PLATFORM	=	unknown
+ifeq ($(PLATFORM),  x64)
+	ZWO_CAA_PLATFORM	=	Linux/x64
+endif
+ifeq ($(PLATFORM),  x86)
+	ZWO_CAA_PLATFORM	=	Linux/x86
+endif
+ifeq ($(PLATFORM),  armv7)
+	ZWO_CAA_PLATFORM	=	Linux/arm
+endif
+ifeq ($(PLATFORM),  armv8)
+	ZWO_CAA_PLATFORM	=	Linux/arm64
+endif
+ifeq ($(PLATFORM),  macos)
+	ZWO_CAA_PLATFORM	=	macOS
+endif
+ZWO_CAA_LIB_DIR		=	./sdk/ZWO_CAA_SDK/lib/$(ZWO_CAA_PLATFORM)/
 
 ############################################
 #	as of Mar 18, 2021, supporting the AtikCamerasSDK_2020_10_19 version of ATIK
@@ -230,6 +248,7 @@ INCLUDES		=	-I/usr/include					\
 					-I$(DRIVERS_DIR)ZWO/Camera		\
 					-I$(DRIVERS_DIR)ZWO/FilterWheel	\
 					-I$(DRIVERS_DIR)ZWO/Focuser		\
+					-I$(DRIVERS_DIR)ZWO/Rotator		\
 					-I$(DRIVERS_DIR)ATIK/Camera		\
 					-I$(DRIVERS_DIR)ATIK/FilterWheel	\
 					-I$(DRIVERS_DIR)QHY/Camera		\
@@ -274,6 +293,7 @@ INCLUDES		=	-I/usr/include					\
 					-I$(TOUP_INCLUDE_DIR)			\
 					-I$(SONY_INCLUDE_DIR)			\
 					-I$(ZWO_EAF_DIR)				\
+					-I$(ZWO_CAA_DIR)				\
 
 
 #					-I/usr/include/opencv2			\
@@ -445,6 +465,7 @@ FOCUSER_DRIVER_OBJECTS=										\
 				$(OBJECT_DIR)rotatordriver.o				\
 				$(OBJECT_DIR)rotatordriver_nc.o				\
 				$(OBJECT_DIR)rotatordriver_sim.o			\
+				$(OBJECT_DIR)rotatordriver_CAA.o			\
 
 ######################################################################################
 SLITTRACKER_DRIVER_OBJECTS=									\
@@ -644,6 +665,7 @@ alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_FOCUSER_ZWO_
 #alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_QHY_
 alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_ROTATOR_
 alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_ROTATOR_NITECRAWLER_
+alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_ROTATOR_CAA_
 #alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_SAFETYMONITOR_
 #alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_SWITCH_
 #alpacapi		:		DEFINEFLAGS		+=	-D_ENABLE_SLIT_TRACKER_
@@ -678,8 +700,11 @@ alpacapi		:									\
 					$(OPENCV_LINK)					\
 					-L$(ZWO_EAF_LIB_DIR)			\
 					-Wl,-rpath,$(ZWO_EAF_LIB_DIR)	\
+					-L$(ZWO_CAA_LIB_DIR)			\
+					-Wl,-rpath,$(ZWO_CAA_LIB_DIR)	\
 					$(ZWO_EFW_OBJECTS)				\
 					-lEAFFocuser					\
+					-lCAA							\
 					-ludev							\
 					-lusb-1.0						\
 					-lpthread						\
@@ -1109,6 +1134,13 @@ $(OBJECT_DIR)rotatordriver_sim.o :		$(DRIVERS_DIR)Simulator/Rotator/rotatordrive
 										$(DRIVERS_DIR)Simulator/Rotator/rotatordriver_sim.h	 	\
 										$(SRC_DIR)alpacadriver.h
 	$(COMPILEPLUS) $(INCLUDES)			$(DRIVERS_DIR)Simulator/Rotator/rotatordriver_sim.cpp -o$(OBJECT_DIR)rotatordriver_sim.o
+
+#-------------------------------------------------------------------------------------
+$(OBJECT_DIR)rotatordriver_CAA.o :		$(DRIVERS_DIR)ZWO/Rotator/rotatordriver_CAA.cpp		\
+										$(DRIVERS_DIR)ZWO/Rotator/rotatordriver_CAA.h	 	\
+										$(SRC_DIR)rotatordriver.h					\
+										$(ZWO_CAA_DIR)/CAA_API.h
+	$(COMPILEPLUS) $(INCLUDES)			$(DRIVERS_DIR)ZWO/Rotator/rotatordriver_CAA.cpp -o$(OBJECT_DIR)rotatordriver_CAA.o
 
 #-------------------------------------------------------------------------------------
 $(OBJECT_DIR)slittracker.o :		$(SRC_DIR)slittracker.cpp				\

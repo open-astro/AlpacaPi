@@ -26,7 +26,7 @@ declare -A manufacturers_by_category=(
 	["Camera"]="ZWO|QHY|ATIK|Player One|QSI|Simulator"
 	["Filter Wheel"]="ZWO|Player One|Pegasus Astro|Simulator"
 	["Focuser"]="ZWO|MoonLite|Pegasus Astro|Simulator"
-	["Rotator"]="MoonLite|Pegasus Astro|Simulator"
+	["Rotator"]="ZWO|MoonLite|Pegasus Astro|Simulator"
 	["Telescope"]="SkyWatcher|Rigel|iOptron|LX200|Simulator"
 	["Weather"]="Unihedron|Raspberry Pi|Simulator"
 	["GPIO / Aux"]="Raspberry Pi|Arduino|Simulator"
@@ -304,6 +304,7 @@ build_full_alpacapi()
 	log_event "Build flags configured (from installed drivers):"
 	log_event "  BUILD_FOCUSER_MOONLITE=$BUILD_FOCUSER_MOONLITE"
 	log_event "  BUILD_ROTATOR_NITECRAWLER=$BUILD_ROTATOR_NITECRAWLER"
+	log_event "  BUILD_ROTATOR_CAA=$BUILD_ROTATOR_CAA"
 	log_event "  BUILD_FOCUSER=$BUILD_FOCUSER"
 	log_event "  BUILD_ROTATOR=$BUILD_ROTATOR"
 
@@ -425,6 +426,7 @@ reset_build_flags()
 
 	BUILD_ROTATOR=false
 	BUILD_ROTATOR_NITECRAWLER=false
+	BUILD_ROTATOR_CAA=false
 
 	BUILD_TELESCOPE=false
 	BUILD_TELESCOPE_LX200=false
@@ -487,6 +489,9 @@ apply_selection_to_build_flags()
 		"Rotator")
 			BUILD_ROTATOR=true
 			case "$vendor" in
+				"ZWO")
+					BUILD_ROTATOR_CAA=true
+					;;
 				"MoonLite")
 					BUILD_ROTATOR_NITECRAWLER=true
 					;;
@@ -653,6 +658,9 @@ alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_ROTATOR_
 EOF
 		[ "$BUILD_ROTATOR_NITECRAWLER" = true ] && cat >>"$custom_makefile" <<'EOF'
 alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_ROTATOR_NITECRAWLER_
+EOF
+		[ "$BUILD_ROTATOR_CAA" = true ] && cat >>"$custom_makefile" <<'EOF'
+alpacapi_selective:	DEFINEFLAGS		+=	-D_ENABLE_ROTATOR_CAA_
 EOF
 	fi
 
@@ -886,6 +894,12 @@ EOF
 			cat >>"$custom_makefile" <<'EOF'
 			$(OBJECT_DIR)rotatordriver_nc.o		\
 			$(OBJECT_DIR)moonlite_com.o			\
+EOF
+		fi
+		if [ "$BUILD_ROTATOR_CAA" = true ]
+		then
+			cat >>"$custom_makefile" <<'EOF'
+			$(OBJECT_DIR)rotatordriver_CAA.o		\
 EOF
 		fi
 		#*	Check for simulator
@@ -1202,6 +1216,12 @@ EOF
 		$(OBJECT_DIR)moonlite_com.o			\
 EOF
 		fi
+		if [ "$BUILD_ROTATOR_CAA" = true ]
+		then
+			cat >>"$custom_makefile" <<'EOF'
+		$(OBJECT_DIR)rotatordriver_CAA.o		\
+EOF
+		fi
 		#*	Add simulator if selected
 		for entry in "${pending_drivers[@]}"
 		do
@@ -1331,12 +1351,19 @@ EOF
 
 	#*	Add ZWO SDK library paths and runtime paths if needed
 	#*	Note: These must come after OpenCV but before ZWO static libraries
-	if [ "$BUILD_FOCUSER_ZWO" = true ] || [ "$BUILD_FILTERWHEEL_ZWO" = true ] || [ "$BUILD_CAMERA_ASI" = true ]
+	if [ "$BUILD_FOCUSER_ZWO" = true ] || [ "$BUILD_FILTERWHEEL_ZWO" = true ] || [ "$BUILD_CAMERA_ASI" = true ] || [ "$BUILD_ROTATOR_CAA" = true ]
 	then
 		cat >>"$custom_makefile" <<'EOF'
 		-L$(ZWO_EAF_LIB_DIR)					\
 		-Wl,-rpath,$(ZWO_EAF_LIB_DIR)			\
 EOF
+		if [ "$BUILD_ROTATOR_CAA" = true ]
+		then
+			cat >>"$custom_makefile" <<'EOF'
+		-L$(ZWO_CAA_LIB_DIR)					\
+		-Wl,-rpath,$(ZWO_CAA_LIB_DIR)			\
+EOF
+		fi
 	fi
 
 	#*	Add ZWO EFW filter wheel static library (must come after library paths)
@@ -1352,6 +1379,14 @@ EOF
 	then
 		cat >>"$custom_makefile" <<'EOF'
 		-lEAFFocuser							\
+EOF
+	fi
+
+	#*	Add ZWO CAA rotator shared library if selected
+	if [ "$BUILD_ROTATOR_CAA" = true ]
+	then
+		cat >>"$custom_makefile" <<'EOF'
+		-lCAA									\
 EOF
 	fi
 
@@ -1512,6 +1547,16 @@ install_usb_rules_for_selected()
 						;;
 				esac
 				;;
+			"Rotator")
+				case "$vendor" in
+					"ZWO")
+						if [ -d "$repo_root/sdk/ZWO_CAA_SDK/lib" ]
+						then
+							install_single_rule "$repo_root/sdk/ZWO_CAA_SDK/lib" "99-caa.rules" && rules_installed=$((rules_installed + 1))
+						fi
+						;;
+				esac
+				;;
 		esac
 	done
 
@@ -1537,6 +1582,7 @@ build_selected_alpacapi()
 	log_event "Build flags configured:"
 	log_event "  BUILD_FOCUSER_MOONLITE=$BUILD_FOCUSER_MOONLITE"
 	log_event "  BUILD_ROTATOR_NITECRAWLER=$BUILD_ROTATOR_NITECRAWLER"
+	log_event "  BUILD_ROTATOR_CAA=$BUILD_ROTATOR_CAA"
 	log_event "  BUILD_FOCUSER=$BUILD_FOCUSER"
 	log_event "  BUILD_ROTATOR=$BUILD_ROTATOR"
 

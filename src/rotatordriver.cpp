@@ -68,6 +68,10 @@
 	#include	"rotatordriver_sim.h"
 #endif
 
+#ifdef _ENABLE_ROTATOR_CAA_
+	#include	"rotatordriver_CAA.h"
+#endif
+
 
 #include	"rotator_AlpacaCmds.h"
 #include	"rotator_AlpacaCmds.cpp"
@@ -80,6 +84,10 @@ void	CreateRotatorObjects(void)
 
 #ifdef _ENABLE_ROTATOR_SIMULATOR_
 	CreateRotatorObjects_SIM();
+#endif
+
+#ifdef _ENABLE_ROTATOR_CAA_
+	CreateRotatorObjects_CAA();
 #endif
 }
 
