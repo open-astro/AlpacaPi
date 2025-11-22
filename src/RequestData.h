@@ -48,9 +48,12 @@ typedef enum
 	kHTTPclient_NotSpecified		=	0,
 	kHTTPclient_AlpacaPi,
 	kHTTPclient_ASCOM_RestSharp,
+	kHTTPclient_ASCOM_AlpacaClient,
 	kHTTPclient_ConfomU,
 	kHTTPclient_Curl,
 	kHTTPclient_Mozilla,
+	kHTTPclient_NINA,
+	kHTTPclient_SkySafari,
 	kHTTPclient_NotRecognized,
 
 	kHTTPclient_last

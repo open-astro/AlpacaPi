@@ -49,8 +49,10 @@
 static void	*AplacaDriverThread(void *arg)
 {
 AlpacaDriver	*alpacaDriverPtr;
+bool			threadExitedNormally;
 
 	CONSOLE_DEBUG(__FUNCTION__);
+	threadExitedNormally	=	false;
 
 	alpacaDriverPtr	=	(AlpacaDriver *)arg;
 	if (alpacaDriverPtr != NULL)
@@ -58,6 +60,13 @@ AlpacaDriver	*alpacaDriverPtr;
 		if (alpacaDriverPtr->cMagicCookie == kMagicCookieValue)
 		{
 			alpacaDriverPtr->RunThread();
+			//*	If RunThread() completed, check if it exited normally
+			//*	Normal exit: cDriverThreadIsActive was set to false (thread was stopped)
+			//*	Abnormal exit: cDriverThreadIsActive is still true (thread crashed/returned early)
+			if (!alpacaDriverPtr->IsDriverThreadActive())
+			{
+				threadExitedNormally	=	true;
+			}
 		}
 		else
 		{
@@ -68,7 +77,11 @@ AlpacaDriver	*alpacaDriverPtr;
 	{
 		CONSOLE_DEBUG("alpacaDriverPtr is NULL  !!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	}
-	CONSOLE_DEBUG("We should NOT be here!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	//*	Only show error if thread exited abnormally (not during normal disconnect)
+	if (!threadExitedNormally)
+	{
+		CONSOLE_DEBUG("We should NOT be here!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	}
 
 	return(NULL);
 }

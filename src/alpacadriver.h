@@ -388,6 +388,7 @@ class AlpacaDriver
 		//-------------------------------------------------------------------------
 		//*	this is for driver thread
 				void				RunThread(void);
+				bool				IsDriverThreadActive(void) const { return(cDriverThreadIsActive); }
 	protected:
 				void				StartDriverThread(void);
 				void				StopDriverThread(void);

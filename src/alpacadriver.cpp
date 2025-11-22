@@ -422,6 +422,128 @@ char	deviceTypeName[32];
 }
 
 //*****************************************************************************
+static FILE				*gNewClientsLogFile		=	NULL;
+static bool				gNewClientsLogNeedsToBeOpened	=	true;
+//*	Track recently logged user agents to avoid logging the same one repeatedly
+#define	kMaxRecentUserAgents	16
+static char				gRecentUserAgents[kMaxRecentUserAgents][kUserAgentLen];
+static int				gRecentUserAgentCnt		=	0;
+
+//*****************************************************************************
+//*	Check if we've recently logged this user agent (to avoid spam)
+//*****************************************************************************
+static bool	HaveRecentlyLoggedUserAgent(const char *userAgent)
+{
+int		iii;
+
+	for (iii=0; iii<gRecentUserAgentCnt; iii++)
+	{
+		if (strcasecmp(gRecentUserAgents[iii], userAgent) == 0)
+		{
+			return(true);	//*	Already logged recently
+		}
+	}
+	return(false);
+}
+
+//*****************************************************************************
+//*	Add user agent to recent list (to avoid logging repeatedly)
+//*****************************************************************************
+static void	AddToRecentUserAgents(const char *userAgent)
+{
+int		iii;
+int		oldestIdx;
+
+	//*	Check if it's already in the list
+	for (iii=0; iii<gRecentUserAgentCnt; iii++)
+	{
+		if (strcasecmp(gRecentUserAgents[iii], userAgent) == 0)
+		{
+			return;	//*	Already in list
+		}
+	}
+
+	//*	Add to list (circular buffer)
+	if (gRecentUserAgentCnt < kMaxRecentUserAgents)
+	{
+		strncpy(gRecentUserAgents[gRecentUserAgentCnt], userAgent, kUserAgentLen - 1);
+		gRecentUserAgents[gRecentUserAgentCnt][kUserAgentLen - 1]	=	0;
+		gRecentUserAgentCnt++;
+	}
+	else
+	{
+		//*	Circular buffer - overwrite oldest
+		oldestIdx	=	0;	//*	Simple: just overwrite the first one
+		strncpy(gRecentUserAgents[oldestIdx], userAgent, kUserAgentLen - 1);
+		gRecentUserAgents[oldestIdx][kUserAgentLen - 1]	=	0;
+	}
+}
+
+//*****************************************************************************
+//*	Log unknown user agent to new_clients.log for self-learning
+//*	Only logs once per unique user agent to avoid performance issues
+//*****************************************************************************
+static void	LogUnknownUserAgent(const char *userAgent, const char *clientIP)
+{
+time_t		currentTime;
+struct tm	*linuxTime;
+char		datestring[64];
+char		logFilename[128];
+char		lineBuff[512];
+
+	//*	Check if we've already logged this user agent recently
+	if (HaveRecentlyLoggedUserAgent(userAgent))
+	{
+		return;	//*	Skip logging to avoid performance impact
+	}
+
+	//*	Add to recent list
+	AddToRecentUserAgents(userAgent);
+
+	if (gNewClientsLogNeedsToBeOpened)
+	{
+		currentTime		=	time(NULL);
+		linuxTime		=	localtime(&currentTime);
+		sprintf(logFilename, "logs/new_clients-%d-%d-%02d-%02d.log",
+									(1900 + linuxTime->tm_year),
+									(1 + linuxTime->tm_mon),
+									linuxTime->tm_mday,
+									gAlpacaListenPort);
+		gNewClientsLogFile	=	fopen(logFilename, "a");
+		gNewClientsLogNeedsToBeOpened	=	false;
+		if (gNewClientsLogFile != NULL)
+		{
+			sprintf(datestring, "%d/%02d/%02d %02d:%02d:%02d",
+							(1900 + linuxTime->tm_year),
+							(1 + linuxTime->tm_mon),
+							linuxTime->tm_mday,
+							linuxTime->tm_hour,
+							linuxTime->tm_min,
+							linuxTime->tm_sec);
+			fprintf(gNewClientsLogFile, "%-18s\tLog file opened --------------------------------------------------------\r\n", datestring);
+			fflush(gNewClientsLogFile);
+		}
+	}
+
+	if (gNewClientsLogFile != NULL)
+	{
+		currentTime		=	time(NULL);
+		linuxTime		=	localtime(&currentTime);
+		sprintf(datestring, "%d/%02d/%02d %02d:%02d:%02d",
+						(1900 + linuxTime->tm_year),
+						(1 + linuxTime->tm_mon),
+						linuxTime->tm_mday,
+						linuxTime->tm_hour,
+						linuxTime->tm_min,
+						linuxTime->tm_sec);
+		sprintf(lineBuff, "%-18s\t%-18s\t%s\r\n", datestring, clientIP, userAgent);
+		fprintf(gNewClientsLogFile, "%s", lineBuff);
+		fflush(gNewClientsLogFile);
+	}
+}
+
+
+//*****************************************************************************
 static void	InitDeviceList(void)
 {
 int		iii;
@@ -2766,9 +2888,12 @@ const char	*gUserAgentNames[]	=
 	"NotSpecified",
 	"AlpacaPi",
 	"ASCOM_RestSharp",
+	"ASCOM_AlpacaClient",
 	"ConfomU",
 	"Curl",
 	"Mozilla",
+	"NINA",
+	"SkySafari",
 	"NotRecognized"
 };
 
@@ -3787,10 +3912,29 @@ int				contentDataLen;
 				reqData->cHTTPclientType	=   kHTTPclient_ASCOM_RestSharp;
 				reqData->clientIs_Conform	=	true;
 			}
+			else if (strncasecmp(reqData->httpUserAgent, "NINA", 4) == 0)
+			{
+				reqData->cHTTPclientType	=   kHTTPclient_NINA;
+			}
+			else if (strncasecmp(reqData->httpUserAgent, "ASCOMAlpacaClient", 17) == 0)
+			{
+				reqData->cHTTPclientType	=   kHTTPclient_ASCOM_AlpacaClient;
+				reqData->clientIs_Conform	=	true;
+			}
+			else if (strncasecmp(reqData->httpUserAgent, "SkySafari", 9) == 0)
+			{
+				reqData->cHTTPclientType	=   kHTTPclient_SkySafari;
+			}
 			else
 			{
+				//*	Not recognized - log to new_clients.log for self-learning
 				reqData->cHTTPclientType	=   kHTTPclient_NotRecognized;
-				CONSOLE_DEBUG_W_STR("User-Agent:\t=", reqData->httpUserAgent);
+				LogUnknownUserAgent(reqData->httpUserAgent, reqData->clientIPaddr);
+				//*	Only log to console in verbose mode to reduce log noise
+				if (gVerbose)
+				{
+					CONSOLE_DEBUG_W_STR("Unrecognized User-Agent:\t=", reqData->httpUserAgent);
+				}
 			}
 		}
 		else

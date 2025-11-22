@@ -1,0 +1,30 @@
+Add user agent logging system and remove JSON configuration
+
+- Added comprehensive logging system for unknown user agents
+  - New LogUnknownUserAgent() function logs unrecognized clients to logs/new_clients-YYYY-MM-DD-PORT.log
+  - Implements deduplication to avoid logging the same user agent repeatedly
+  - Added logs/README.md with complete documentation of logging system
+  - Logs include timestamp, client IP, and user agent string for self-learning
+
+- Removed JSON-based user agent mapping system
+  - Removed LoadUserAgentMappings() and CheckUserAgentFromJSON() functions
+  - Removed TYPE_UserAgentMapping struct and related data structures
+  - Removed unused #include "json_parse.h" from alpacadriver.cpp
+  - Deleted assets/user_agents.json and assets/README.md
+
+- Consolidated user agent detection to hardcoded string comparisons
+  - All client recognition now uses direct string matching
+  - Added missing ASCOMAlpacaClient and SkySafari mappings to hardcoded detection
+  - Simplified code flow by removing JSON parsing layer
+
+- Fixed build error with thread status access
+  - Added IsDriverThreadActive() public getter method to AlpacaDriver class
+  - Updated alpacadriverThread.cpp to use getter instead of accessing protected member
+
+Files changed:
+- logs/README.md: New comprehensive documentation for logging system
+- src/alpacadriver.cpp: Added logging functions, removed JSON system, simplified detection
+- src/alpacadriver.h: Added IsDriverThreadActive() getter method
+- src/alpacadriverThread.cpp: Use getter method for thread status
+- src/RequestData.h: No functional changes (enum definitions remain)
+
